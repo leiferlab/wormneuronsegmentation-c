@@ -2,6 +2,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include "neuronsegmentation.h"
+#include <stdio.h>
 
 void find_neurons_frames_sequence(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
@@ -14,10 +15,10 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	
     // Size of the arrays / images. sizex2 and sizey2 are the sizes of the 
     // resized images.
-    int32_t sizex2, sizey2, sizexy2, sizexy;
+    int32_t sizex2, sizey2, sizexy;
     sizex2 = sizex / 2;
     sizey2 = sizey / 2;
-    sizexy2 = sizex2*sizey2;
+    //sizexy2 = sizex2*sizey2;
     sizexy = sizex*sizey;
     
     // Declare the arrays that you don't need to be accessible from outside C++.
@@ -29,7 +30,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
        
     // Create the cv::Mat header for all the images.
     cv::Mat A = cv::Mat(sizex2, sizey2, CV_16U, ArrA);
-    cv::Mat B = cv::Mat(sizex2, sizey2, CV_16U, ArrB);
+    cv::Mat B = cv::Mat(sizex2, sizey2, CV_32F, ArrB);
 	cv::Mat BX = cv::Mat(sizex2, sizey2, CV_32F, ArrBX);
 	cv::Mat BY = cv::Mat(sizex2, sizey2, CV_32F, ArrBY);
 	cv::Mat Bth = cv::Mat(sizex2, sizey2, CV_32F, ArrBth);
@@ -39,23 +40,15 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	cv::Mat K = cv::Mat(3, 3, CV_32F, cv::Scalar::all(1));
 	    
     double maxX, maxY, maxXInStack, maxYInStack;
-    float threshold = 0.25;
-    
-    /** 
-    You need to initialize maxXInStack and maxYInStack. Run the segmentation
-    twice for the first volume.
-    **/
-    
-    // TODO
-    
+    float threshold = 0.05;//0.25
+            
     // Index for the frames with respect to the beginning
-    int i = 0;
     ImgIn = framesIn;
     
     // For each volume
-    maxXInStack = 0.0;
-    maxYInStack = 0.0;
-    
+    maxXInStack = -1.0;
+    maxYInStack = -1.0;
+        
     // Run the single frame segmentation to initialize maxX/YInStack
     segment_singleframe_pipeline(ImgIn, sizex, sizey, 
         C, sizeC, A, B, BX, BY, Bth, Bdil, 
@@ -66,7 +59,9 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
     maxYInStack = maxY;
         
     // Segment each frame independently and find the neurons.
-    for(int nu=0; nu<framesN; nu++) {
+    for(uint nu=0; nu<framesN; nu++) {
+            maxXInStack = -1.0;
+            maxYInStack = -1.0;
               
         // Run the single frame segmentation.
         segment_singleframe_pipeline(ImgIn, sizex, sizey, 
@@ -74,24 +69,25 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
             NeuronXY, NeuronN[nu],
             maxX, maxY, maxXInStack, maxYInStack, threshold, true);
         
-        /**
-        Move the pointer to the next frames in framesIn/ImgIn.
-        For the time being, i is just to keep track of the current frame, 
-        but I'm not using it actually for anything.
-        **/
-        ImgIn = ImgIn + sizexy*framesStride;
-        
-        /**
-        Move NeuronXY further along NeuronXYCAndidatesVolume by 
-        the number of candidates found in this volume, and 
-        NeuronNCandidates to the next element of NeuronNCandidatesVolume.
-        **/
-        NeuronXY = NeuronXY + NeuronN[nu];
-        NeuronN++;
-        
-        // Update encountered maxima.
-        maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
-        maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
+        if(framesN>0){
+            /**
+            Move the pointer to the next frames in framesIn/ImgIn.
+            For the time being, i is just to keep track of the current frame, 
+            but I'm not using it actually for anything.
+            **/
+            ImgIn = ImgIn + sizexy*framesStride;
+            
+            /**
+            Move NeuronXY further along NeuronXYCAndidatesVolume by 
+            the number of candidates found in this volume, and 
+            NeuronNCandidates to the next element of NeuronNCandidatesVolume.
+            **/
+            NeuronXY = NeuronXY + NeuronN[nu];
+            
+            // Update encountered maxima.
+            maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
+            maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
+        }
     }
 }
 
@@ -138,7 +134,7 @@ void find_neurons(uint16_t framesIn[],
     float *ArrB;
     
     // Pointers to B0, B1, B2, B3, B4 for the candidate check.
-    float *B0, *B1, *B2, *B3, *B4;
+    //float *B0, *B1, *B2, *B3, *B4;
     
     // Create the cv::Mat header for all the images but B, which will need to 
     // be changed at every frame within a volume, so that they can be stored.
@@ -176,7 +172,7 @@ void find_neurons(uint16_t framesIn[],
     ImgIn = framesIn;
     
     // For each volume
-    for(int mu=0; mu<volumeN; mu++) {
+    for(uint mu=0; mu<volumeN; mu++) {
         ArrB = ArrBB;
         
         NeuronXYCandidates = NeuronXYCandidatesVolume;
@@ -350,7 +346,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 
 		// Apply Gaussian blur
 		// 210 us
-		double blur = 0.65;
+		double blur = 0.65; //0.65
 		cv::GaussianBlur(A, A, cv::Size(3, 3), blur, blur);
 
 		// Calculate -d2/dx2 and -d2/dy2 with the filter passed as C.
@@ -361,6 +357,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// use 1/2 instead of the 1 as second filter in the separable filter
 		// function. (Saves 100 microseconds)
 		// 300 us
+
 		cv::sepFilter2D(A, BX, CV_32F, C, OneHalf);
 		cv::sepFilter2D(A, BY, CV_32F, OneHalf, C);
 		cv::add(BX,BY,B);
@@ -401,13 +398,14 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		float tmpBi;
 		float tmpBdili;
 		for (int i = 0; i < sizex2*sizey2; i++) {
-			tmpBi = B.at<double>(i);
-			tmpBdili = Bdil.at<double>(i);
+			tmpBi = B.at<float>(i);
+			tmpBdili = Bdil.at<float>(i);
 			if (tmpBi != 0.0 && tmpBi == tmpBdili) {
 				NeuronXY[k] = i;
 				k++;
 			}
 		}
+	
 	}
 	NeuronN = k;
 }
@@ -431,7 +429,7 @@ void segment_check2dcandidates_5planes(
 	bool ok;
 
 
-	for (int i = 0; i < NeuronNin; i++) {
+	for (uint i = 0; i < NeuronNin; i++) {
 		index = NeuronXYin[i];
 		Bxy = ArrB2[index];
 

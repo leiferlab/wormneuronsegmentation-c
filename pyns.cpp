@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include "neuronsegmentation.cpp"
 
-static PyObject *pyns_test(PyObject *self, PyObject *args);
 static PyObject *pyns_find_neurons(PyObject *self, PyObject *args);
 static PyObject *pyns_find_neurons_frames_sequence(PyObject *self, PyObject *args);
 
@@ -15,7 +14,6 @@ static PyObject *pyns_find_neurons_frames_sequence(PyObject *self, PyObject *arg
 static PyMethodDef pynsMethods[] = {
     /*{"initRegistration", pygmmreg_initRegistration, METH_VARARGS,
         "Initialize the registration (regTransformationCostFunction class)"},*/
-    {"test", pyns_test, METH_VARARGS, ""},
     {"find_neurons", pyns_find_neurons, METH_VARARGS, ""},
     {"find_neurons_frames_sequence", pyns_find_neurons_frames_sequence, METH_VARARGS, ""},
     {NULL, NULL, 0, NULL}
@@ -36,7 +34,6 @@ PyMODINIT_FUNC PyInit_pyns(void) {
         return PyModule_Create(&pyns);
     }
     
-void funzione(uint16_t c[]) { c[2] = 1; }
     
 //////// The actual functions of the modules
 
@@ -202,7 +199,7 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
     
     // Get pointers to the data in the numpy arrays.
     uint16_t *framesIn = (uint16_t*)PyArray_DATA(framesIn_a);
-    uint32_t *volumeFirstFrame = (uint32_t*)PyArray_DATA(volumeFirstFrame);
+    uint32_t *volumeFirstFrame = (uint32_t*)PyArray_DATA(volumeFirstFrame_a);
     uint16_t *ArrA = (uint16_t*)PyArray_DATA(ArrA_a);
     float *ArrBB = (float*)PyArray_DATA(ArrBB_a);
     float *ArrBX = (float*)PyArray_DATA(ArrBX_a);
@@ -249,64 +246,6 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
     Py_XDECREF(NeuronNCandidatesVolume_a);
     Py_XDECREF(NeuronXYAll_a);
     Py_XDECREF(NeuronNAll_a);
-    
-    // Return the python object none. Its reference count has to be increased.
-    Py_INCREF(Py_None);
-    return Py_None;
-}
-
-
-
-static PyObject *pyns_test(PyObject *self, PyObject *args) {
-
-    int nprova;
-    PyObject *prova_obj;
-    
-    if(!PyArg_ParseTuple(args, "iO", &nprova, &prova_obj)) return NULL;
-    
-    PyObject *prova_arr = PyArray_FROM_OTF(prova_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-    
-    // Check that the above conversion worked, otherwise decrease the reference
-    // count and return NULL.                                 
-    if (prova_arr == NULL ) {
-        Py_XDECREF(prova_arr);
-        return NULL;
-    }
-    
-    // Get pointers to the data in the numpy arrays.
-    double *prova = (double*)PyArray_DATA(prova_arr);
-    
-    //////////////////////////////////
-    //////////////////////////////////
-    // Actual C code
-    //////////////////////////////////
-    //////////////////////////////////
-    
-    uint16_t c[3] = {0,0,0};
-    funzione(c);
-    std::cout << c[2];
-    
-    uint16_t a[3] = {0,0,0};
-    uint16_t *b;
-    
-    b = a ;
-    funzione(b);
-    //*(b) = 3;
-    
-    std::cout << a[0];
-    std::cout << a[1];
-    std::cout << a[2];
-    
-    //////////////////////////////////
-    //////////////////////////////////
-    // End of C code
-    //////////////////////////////////
-    //////////////////////////////////
-    
-    
-    // Decrease the reference count for the python objects that have been 
-    // declared in this function.
-    Py_XDECREF(prova_arr);
     
     // Return the python object none. Its reference count has to be increased.
     Py_INCREF(Py_None);
