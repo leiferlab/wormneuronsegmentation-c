@@ -11,27 +11,84 @@ static PyObject *pyns_find_neurons_frames_sequence(PyObject *self, PyObject *arg
 /////// Python-module-related functions and tables
 
 // The module's method table
-static PyMethodDef pynsMethods[] = {
-    /*{"initRegistration", pygmmreg_initRegistration, METH_VARARGS,
-        "Initialize the registration (regTransformationCostFunction class)"},*/
-    {"find_neurons", pyns_find_neurons, METH_VARARGS, ""},
-    {"find_neurons_frames_sequence", pyns_find_neurons_frames_sequence, METH_VARARGS, ""},
+static PyMethodDef _pyneuronsegmentation_cMethods[] = {
+    {"_find_neurons", pyns_find_neurons, METH_VARARGS, ""},
+    {"find_neurons_frames_sequence", pyns_find_neurons_frames_sequence, METH_VARARGS, 
+        "\
+        Parameters \n\
+        ---------- \n\
+        framesN: np.uint32 \n\
+            Total number of images (frames) passed in framesIn. \n\
+        framesIn: np.array of np.uint16 \n\
+            Array containing the images to be analyzed as [index, x, y]. Can \n\
+            contain multiple channels as [index, channel, x, y] \n\
+            (see framesStride). \n\
+        sizex: np.uint32 \n\
+            Size along x of the images. \n\
+        sizey: np.uint32 \n\
+            Size along y of the images. \n\
+        framesStride: np.uint32 \n\
+            Number of channels present for each image (e.g. 2 for RFP GFP). \n\
+        ArrA: np.array of np.float32 \n\
+            Allocated array used in the analysis (and diagnostics). \n\
+            Must have half the size of the frames in each dimensions (e.g. if\n\
+            framesIn has shape (_,_,512,512), this array must be (256,256). \n\
+        ArrB: np.array of np.float32 \n\
+            Allocated array used in the analysis (and diagnostics). \n\
+            Must have half the size of the frames in each dimensions (e.g. if\n\
+            framesIn has shape (_,_,512,512), this array must be (256,256).\n\
+        ArrBX: np.array of np.float32 \n\
+            Allocated array used in the analysis (and diagnostics). \n\
+            Must have half the size of the frames in each dimensions (e.g. if\n\
+            framesIn has shape (_,_,512,512), this array must be (256,256).\n\
+        ArrBY: np.array of np.float32 \n\
+            Allocated array used in the analysis (and diagnostics). \n\
+            Must have half the size of the frames in each dimensions (e.g. if\n\
+            framesIn has shape (_,_,512,512), this array must be (256,256).\n\
+        ArrBth: np.array of np.float32 \n\
+            Allocated array used in the analysis (and diagnostics). \n\
+            Must have half the size of the frames in each dimensions (e.g. if\n\
+            framesIn has shape (_,_,512,512), this array must be (256,256). \n\
+        NeuronXY: np.array of np.uint32 \n\
+            Array that will be populated with the coordinates of the neurons\n\
+            found (represented as 1D coordinates in the linearized image).\n\
+            The coordinates of the neurons found in the different frames will\n\
+            be stored in this array sequentially, and can be split using the\n\
+            array NeuronN. \n\
+            This array needs to have more elements than the total number of \n\
+            neurons that will be found, otherwise a Segmentation fault will \n\
+            occur. Make safe estimates: this array will take anyway a small \n\
+            amount of memory. \n\
+        NeuronN: np.array of np.uint32 \n\
+            Array that will be populated with the number of neurons found in \n\
+            each frame (NeuronN[i] is the number of neurons found in frame i).\n\
+            Its size must be the number of frames passed.\n\
+        \n\
+        Returns\n\
+        -------\n\
+        None. \n\
+        \n\
+        Finds the position of the neurons in a sequence of images not \n\
+        belonging to volumes, i.e. the neurons are found in 2D and there is \n\
+        no 3D selection of the candidate neurons, as in the function \n\
+        find_neurons(). \n\
+        "},
     {NULL, NULL, 0, NULL}
 };
 
 // The module definition function
-static struct PyModuleDef pyns = {
+static struct PyModuleDef _pyneuronsegmentation_c = {
     PyModuleDef_HEAD_INIT,
-    "pyns",
+    "_pyneuronsegmentation_c",
     NULL, // Module documentation
     -1,
-    pynsMethods
+    _pyneuronsegmentation_cMethods
 };
 
 // The module initialization function
-PyMODINIT_FUNC PyInit_pyns(void) { 
+PyMODINIT_FUNC PyInit__pyneuronsegmentation_c(void) { 
         import_array(); //Numpy
-        return PyModule_Create(&pyns);
+        return PyModule_Create(&_pyneuronsegmentation_c);
     }
     
     

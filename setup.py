@@ -24,13 +24,14 @@ elif tigressdata:
 
 includes.append(numpy.get_include())
 
-pyns = Extension('pyns',
-                    sources = ['pyns.cpp'],
+pyneuronsegmentation_c = Extension('pyneuronsegmentation._pyneuronsegmentation_c',
+                    sources = ['pyneuronsegmentation/_pyneuronsegmentation_c.cpp'],
                     include_dirs = includes,
                     extra_objects=extra_objects,
                     extra_compile_args=['-O3'])
 
-setup (name = 'pyns',
+setup (name = 'pyneuronsegmentation',
        version = '1.0',
-       description = 'pyns',
-       ext_modules = [pyns])
+       description = 'neuronsegmentation',
+       py_modules = ['pyneuronsegmentation._pyneuronsegmentation_py'],
+       ext_modules = [pyneuronsegmentation_c])
