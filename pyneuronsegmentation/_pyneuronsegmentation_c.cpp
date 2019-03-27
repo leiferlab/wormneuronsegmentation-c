@@ -99,7 +99,8 @@ static PyObject *pyns_find_neurons_frames_sequence(PyObject *self, PyObject *arg
     int framesN;
     PyObject *framesIn_o;
     
-    int sizex, sizey, framesStride;
+    int sizex, sizey;
+    int32_t framesStride;
     float threshold;
     double blur;
     
@@ -198,7 +199,8 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
     int framesN;
     PyObject *framesIn_o;
     
-    int sizex, sizey, framesStride;
+    int sizex, sizey;
+    int32_t framesStride;
     
     int volumeN;
     PyObject *volumeFirstFrame_o;

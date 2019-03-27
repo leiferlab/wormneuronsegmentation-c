@@ -290,7 +290,6 @@ void find_neurons(uint16_t framesIn[],
                 NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
 
         NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
-        //std::cout<<NeuronNInAllPreviousVolumes<<"\n ";
         
         // with B2 at nu=1 (B0=Zero)
         nu = 1;
@@ -309,7 +308,6 @@ void find_neurons(uint16_t framesIn[],
                 NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
         
         NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
-        //std::cout<<NeuronNInAllPreviousVolumes<<"\n ";
         
         for(int nu=2; nu<framesInVolume-2; nu++) {
             // Move the pointers to the right positions.
@@ -332,7 +330,6 @@ void find_neurons(uint16_t framesIn[],
                 NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
-            //std::cout<<NeuronNInAllPreviousVolumes<<"\n ";
         }
         
         // with B2 at nu=framesInVolume-2 (B4=Zero)
@@ -352,7 +349,6 @@ void find_neurons(uint16_t framesIn[],
                 NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
                 
         NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
-        //std::cout<<NeuronNInAllPreviousVolumes<<"\n ";
         
         // with B2 at nu=framesInVolume-1 (B4=B3=Zero)
         nu = framesInVolume - 1;
@@ -371,7 +367,6 @@ void find_neurons(uint16_t framesIn[],
                 NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
         
         NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
-        //std::cout<<NeuronNInAllPreviousVolumes<<"\n ";
     }
 }
 
