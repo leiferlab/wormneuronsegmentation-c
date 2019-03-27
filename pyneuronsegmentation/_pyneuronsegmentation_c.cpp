@@ -3,7 +3,7 @@
 #include <numpy/arrayobject.h>
 #include <iostream>
 #include <stdint.h>
-#include "neuronsegmentation.cpp"
+#include "../neuronsegmentation/neuronsegmentation.cpp"
 
 static PyObject *pyns_find_neurons(PyObject *self, PyObject *args);
 static PyObject *pyns_find_neurons_frames_sequence(PyObject *self, PyObject *args);
