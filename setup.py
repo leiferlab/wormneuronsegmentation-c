@@ -1,8 +1,9 @@
 from distutils.core import setup, Extension
 import numpy
+import os
 
 francesco = False
-tigressdata = True
+tigressdata = False
 
 libraries = ['opencv_core.so.3.4','opencv_imgproc.so.3.4']
 
@@ -13,13 +14,21 @@ if francesco:
 elif tigressdata:
     lib_dir = '/home/frandi/.local/lib64/'
     include_dir = '/home/frandi/.local/include/'
+elif os.name == 'nt':
+    lib_dir = 'C:\\Users\\francesco\\dev\\opencv\\build\\x64\\vc14\\lib\\'
+    include_dir = 'C:\\Users\\francesco\\dev\\opencv\\build\\include\\'
+    libraries = ['opencv_world341.lib']
 
 extra_objects = ['{}lib{}'.format(lib_dir, l) for l in libraries]
+if os.name == 'nt': extra_objects = ['{}{}'.format(lib_dir, l) for l in libraries]
 print(extra_objects)
 if francesco: 
     includes = [include_dir+"opencv2"]
 elif tigressdata: 
     includes = [include_dir]
+elif os.name == 'nt':
+    includes = [include_dir]
+
 
 
 includes.append(numpy.get_include())
