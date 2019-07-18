@@ -101,7 +101,7 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronXYCandidatesVolume[], 
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
-	float threshold, double blur
+	float threshold, double blur, uint32_t checkPlanesN
 	) {
 	
 	/*
@@ -273,100 +273,251 @@ void find_neurons(uint16_t framesIn[],
         uint32_t *NeuronXYin, *NeuronXYout;
         uint32_t NeuronNin;
         
-        // with B2 at nu=0 (B0=B1=Zero)
-        nu = 0;
-        B0 = Zero;
-        B1 = Zero;
-        B2 = ArrBB;
-        B3 = ArrBB + sizexy2;
-        B4 = ArrBB + 2*sizexy2;
-        NeuronXYin = NeuronXYCandidatesVolume;
-        NeuronNin = NeuronNCandidatesVolume[0];
-        NeuronXYout = NeuronXYAll + NeuronNInAllPreviousVolumes;
-                
-        segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
-                sizex2, sizey2, 
-                NeuronXYin, NeuronNin,
-                NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+        if(checkPlanesN==5){
+            // with B2 at nu=0 (B0=B1=Zero)
+            nu = 0;
+            B0 = Zero;
+            B1 = Zero;
+            B2 = ArrBB;
+            B3 = ArrBB + sizexy2;
+            B4 = ArrBB + 2*sizexy2;
+            NeuronXYin = NeuronXYCandidatesVolume;
+            NeuronNin = NeuronNCandidatesVolume[0];
+            NeuronXYout = NeuronXYAll + NeuronNInAllPreviousVolumes;
+                    
+            segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
 
-        NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
-        
-        // with B2 at nu=1 (B0=Zero)
-        nu = 1;
-        B0 = Zero;
-        B1 = ArrBB;
-        B2 = ArrBB + sizexy2;
-        B3 = ArrBB + 2*sizexy2;
-        B4 = ArrBB + 3*sizexy2;
-        NeuronXYin += NeuronNin;
-        NeuronNin = NeuronNCandidatesVolume[1];
-        NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
-        
-        segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
-                sizex2, sizey2, 
-                NeuronXYin, NeuronNin,
-                NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
-        
-        NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
-        
-        for(int nu=2; nu<framesInVolume-2; nu++) {
-            // Move the pointers to the right positions.
+            NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
-            // The actual "Hessians"
-            B0 = ArrBB + (nu-2)*sizexy2;
-            B1 = ArrBB + (nu-1)*sizexy2;
-            B2 = ArrBB + (nu)*sizexy2;
-            B3 = ArrBB + (nu+1)*sizexy2;
-            B4 = ArrBB + (nu+2)*sizexy2;
+            // with B2 at nu=1 (B0=Zero)
+            nu = 1;
+            B0 = Zero;
+            B1 = ArrBB;
+            B2 = ArrBB + sizexy2;
+            B3 = ArrBB + 2*sizexy2;
+            B4 = ArrBB + 3*sizexy2;
+            NeuronXYin += NeuronNin;
+            NeuronNin = NeuronNCandidatesVolume[1];
+            NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
             
-            // The indexes and number of the neuron candidates.
+            segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+            
+            NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+            
+            for(int nu=2; nu<framesInVolume-2; nu++) {
+                // Move the pointers to the right positions.
+                
+                // The actual "Hessians"
+                B0 = ArrBB + (nu-2)*sizexy2;
+                B1 = ArrBB + (nu-1)*sizexy2;
+                B2 = ArrBB + (nu)*sizexy2;
+                B3 = ArrBB + (nu+1)*sizexy2;
+                B4 = ArrBB + (nu+2)*sizexy2;
+                
+                // The indexes and number of the neuron candidates.
+                NeuronXYin += NeuronNin;
+                NeuronNin = NeuronNCandidatesVolume[nu];
+                NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
+                
+                segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                
+                NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+            }
+            
+            // with B2 at nu=framesInVolume-2 (B4=Zero)
+            nu = framesInVolume - 2;
+            B0 = ArrBB + (framesInVolume-4)*sizexy2;
+            B1 = ArrBB + (framesInVolume-3)*sizexy2;
+            B2 = ArrBB + (framesInVolume-2)*sizexy2;
+            B3 = ArrBB + (framesInVolume-1)*sizexy2;
+            B4 = Zero;
             NeuronXYin += NeuronNin;
             NeuronNin = NeuronNCandidatesVolume[nu];
             NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
             
             segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
-                sizex2, sizey2, 
-                NeuronXYin, NeuronNin,
-                NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    
+            NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+            
+            // with B2 at nu=framesInVolume-1 (B4=B3=Zero)
+            nu = framesInVolume - 1;
+            B0 = ArrBB + (framesInVolume-3)*sizexy2;
+            B1 = ArrBB + (framesInVolume-2)*sizexy2;
+            B2 = ArrBB + (framesInVolume-1)*sizexy2;
+            B3 = Zero;
+            B4 = Zero;
+            NeuronXYin += NeuronNin;
+            NeuronNin = NeuronNCandidatesVolume[nu];
+            NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
+            
+            segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
-        }
         
-        // with B2 at nu=framesInVolume-2 (B4=Zero)
-        nu = framesInVolume - 2;
-        B0 = ArrBB + (framesInVolume-4)*sizexy2;
-        B1 = ArrBB + (framesInVolume-3)*sizexy2;
-        B2 = ArrBB + (framesInVolume-2)*sizexy2;
-        B3 = ArrBB + (framesInVolume-1)*sizexy2;
-        B4 = Zero;
-        NeuronXYin += NeuronNin;
-        NeuronNin = NeuronNCandidatesVolume[nu];
-        NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
+        } else if(checkPlanesN==7) {
+            // You need two additional pointers
+            float *B5, *B6;
         
-        segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
-                sizex2, sizey2, 
-                NeuronXYin, NeuronNin,
-                NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+            // with B3 at nu=0 (B0=B1=B2=Zero)
+            nu = 0;
+            B0 = Zero;
+            B1 = Zero;
+            B2 = Zero;
+            B3 = ArrBB;
+            B4 = ArrBB + sizexy2;
+            B5 = ArrBB + 2*sizexy2;
+            B6 = ArrBB + 3*sizexy2;
+            NeuronXYin = NeuronXYCandidatesVolume;
+            NeuronNin = NeuronNCandidatesVolume[0];
+            NeuronXYout = NeuronXYAll + NeuronNInAllPreviousVolumes;
+                    
+            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+
+            NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+            
+            // with B3 at nu=1 (B0=B1=Zero)
+            nu = 1;
+            B0 = Zero;
+            B1 = Zero;
+            B2 = ArrBB;
+            B3 = ArrBB + sizexy2;
+            B4 = ArrBB + 2*sizexy2;
+            B5 = ArrBB + 3*sizexy2;
+            B6 = ArrBB + 4*sizexy2;
+            NeuronXYin += NeuronNin;
+            NeuronNin = NeuronNCandidatesVolume[1];
+            NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
+            
+            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+            
+            NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+            
+            // with B3 at nu=2 (B0=Zero)
+            nu = 2;
+            B0 = Zero;
+            B1 = ArrBB;
+            B2 = ArrBB + sizexy2;
+            B3 = ArrBB + 2*sizexy2;
+            B4 = ArrBB + 3*sizexy2;
+            B5 = ArrBB + 4*sizexy2;
+            B6 = ArrBB + 5*sizexy2;
+            NeuronXYin += NeuronNin;
+            NeuronNin = NeuronNCandidatesVolume[1];
+            NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
+            
+            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+            
+            NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+            
+            for(int nu=3; nu<framesInVolume-3; nu++) {
+                // Move the pointers to the right positions.
                 
-        NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
-        
-        // with B2 at nu=framesInVolume-1 (B4=B3=Zero)
-        nu = framesInVolume - 1;
-        B0 = ArrBB + (framesInVolume-3)*sizexy2;
-        B1 = ArrBB + (framesInVolume-2)*sizexy2;
-        B2 = ArrBB + (framesInVolume-1)*sizexy2;
-        B3 = Zero;
-        B4 = Zero;
-        NeuronXYin += NeuronNin;
-        NeuronNin = NeuronNCandidatesVolume[nu];
-        NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
-        
-        segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
-                sizex2, sizey2, 
-                NeuronXYin, NeuronNin,
-                NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
-        
-        NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+                // The actual "Hessians"
+                B0 = ArrBB + (nu-3)*sizexy2;
+                B1 = ArrBB + (nu-2)*sizexy2;
+                B2 = ArrBB + (nu-1)*sizexy2;
+                B3 = ArrBB + (nu)*sizexy2;
+                B4 = ArrBB + (nu+1)*sizexy2;
+                B5 = ArrBB + (nu+2)*sizexy2;
+                B6 = ArrBB + (nu+3)*sizexy2;
+                
+                // The indexes and number of the neuron candidates.
+                NeuronXYin += NeuronNin;
+                NeuronNin = NeuronNCandidatesVolume[nu];
+                NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
+                
+                segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                
+                NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+            }
+            
+            // with B3 at nu=framesInVolume-3 (B6=Zero)
+            nu = framesInVolume - 3;
+            B0 = ArrBB + (framesInVolume-6)*sizexy2;
+            B1 = ArrBB + (framesInVolume-5)*sizexy2;
+            B2 = ArrBB + (framesInVolume-4)*sizexy2;
+            B3 = ArrBB + (framesInVolume-3)*sizexy2;
+            B4 = ArrBB + (framesInVolume-2)*sizexy2;
+            B5 = ArrBB + (framesInVolume-1)*sizexy2;
+            B6 = Zero;
+            NeuronXYin += NeuronNin;
+            NeuronNin = NeuronNCandidatesVolume[nu];
+            NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
+            
+            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    
+            NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+            
+            // with B3 at nu=framesInVolume-2 (B6=B5=Zero)
+            nu = framesInVolume - 2;
+            B0 = ArrBB + (framesInVolume-5)*sizexy2;
+            B1 = ArrBB + (framesInVolume-4)*sizexy2;
+            B2 = ArrBB + (framesInVolume-3)*sizexy2;
+            B3 = ArrBB + (framesInVolume-2)*sizexy2;
+            B4 = ArrBB + (framesInVolume-1)*sizexy2;
+            B5 = Zero;
+            B6 = Zero;
+            NeuronXYin += NeuronNin;
+            NeuronNin = NeuronNCandidatesVolume[nu];
+            NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
+            
+            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    
+            NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+            
+            // with B3 at nu=framesInVolume-1 (B6=Zero)
+            nu = framesInVolume - 1;
+            B0 = ArrBB + (framesInVolume-4)*sizexy2;
+            B1 = ArrBB + (framesInVolume-3)*sizexy2;
+            B2 = ArrBB + (framesInVolume-2)*sizexy2;
+            B3 = ArrBB + (framesInVolume-1)*sizexy2;
+            B4 = Zero;
+            B5 = Zero;
+            B6 = Zero;
+            NeuronXYin += NeuronNin;
+            NeuronNin = NeuronNCandidatesVolume[nu];
+            NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
+            
+            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+                    sizex2, sizey2, 
+                    NeuronXYin, NeuronNin,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    
+            NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
+        }
     }
 }
 
@@ -530,6 +681,63 @@ void segment_check2dcandidates_5planes(
 		            (Bxy > ArrB3[index]) &&
 		            (Bxy > ArrB3[index + 1]) &&
 		            (Bxy > ArrB3[index + sizeBx]) ) {
+			    *(NeuronXYout+k) = index; 
+			    k++;
+		    }
+		}
+	}
+	NeuronNout = k;
+}
+
+void segment_check2dcandidates_7planes(
+	float ArrB0[], float ArrB1[], float ArrB2[],
+	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
+    int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+
+	// Brute force check if the candidate neurons found on each plane are
+	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
+	// just in their plane.
+	// This function can run as soon as the 5 planes are available, so that
+	// you don't have to wait until the full volume is ready before starting
+	// this brute force check.
+	
+	float Bxy;
+	int32_t k = 0;
+	uint32_t index;
+	uint32_t upperlimit = sizeBx*sizeBy - sizeBx;
+
+	for (uint i = 0; i < NeuronNin; i++) {
+		index = NeuronXYin[i];
+		Bxy = ArrB3[index];
+
+		if (index > (uint32_t)sizeBx && index < upperlimit) {
+		    if (    (Bxy > ArrB0[index]) &&
+		    
+		            (Bxy > ArrB6[index]) &&
+		            
+		            (Bxy > ArrB1[index - sizeBx]) &&
+		            (Bxy > ArrB1[index - 1]) &&
+		            (Bxy > ArrB1[index]) &&
+		            (Bxy > ArrB1[index + 1]) &&
+		            (Bxy > ArrB1[index + sizeBx]) &&
+		            
+		            (Bxy > ArrB2[index - 1]) &&
+		            (Bxy > ArrB2[index]) &&
+		            (Bxy > ArrB2[index + 1]) &&
+		            (Bxy > ArrB2[index + sizeBx]) &&
+		            
+		            (Bxy > ArrB4[index - sizeBx]) &&
+		            (Bxy > ArrB4[index - 1]) &&
+		            (Bxy > ArrB4[index]) &&
+		            (Bxy > ArrB4[index + 1]) &&
+		            (Bxy > ArrB4[index + sizeBx]) &&
+		            
+		            (Bxy > ArrB5[index - 1]) &&
+		            (Bxy > ArrB5[index]) &&
+		            (Bxy > ArrB5[index + 1]) &&
+		            (Bxy > ArrB5[index + sizeBx]) ) {
 			    *(NeuronXYout+k) = index; 
 			    k++;
 		    }

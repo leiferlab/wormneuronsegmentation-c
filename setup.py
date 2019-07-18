@@ -3,7 +3,7 @@ import numpy
 import os
 
 francesco = False
-tigressdata = False
+tigressdata = True
 
 libraries = ['opencv_core.so.3.4','opencv_imgproc.so.3.4']
 

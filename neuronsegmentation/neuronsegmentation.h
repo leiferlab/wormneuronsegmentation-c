@@ -13,6 +13,13 @@ void segment_check2dcandidates_5planes(
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
 	uint32_t *NeuronXYout, uint32_t &NeuronNout);
 	
+void segment_check2dcandidates_7planes(
+	float ArrB0[], float ArrB1[], float ArrB2[],
+	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
+	int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	uint32_t *NeuronXYout, uint32_t &NeuronNout);
+	
 void find_neurons_frames_sequence(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
     int32_t framesStride,
@@ -32,4 +39,4 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronXYCandidatesVolume[], 
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
-	float threshold = 0.25, double blur = 0.65);
+	float threshold = 0.25, double blur = 0.65, uint32_t checkPlanesN = 5);

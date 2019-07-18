@@ -2,11 +2,17 @@ import numpy as np
 import pyneuronsegmentation as pyns
 
 def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
-    threshold=0.25, blur=0.65, maxNeuronN=100000, maxFramesInVolume=100):
+    threshold=0.25, blur=0.65, checkPlanesN=5,
+    maxNeuronN=100000, maxFramesInVolume=100):
     
     framesN = (np.uint32)(framesIn.shape[0])
-    sizex = (np.uint32)(framesIn.shape[1])//channelsN
-    sizey = (np.uint32)(framesIn.shape[2])
+    if len(framesIn.shape)==3:
+        sizex = (np.uint32)(framesIn.shape[1])//channelsN
+        sizey = (np.uint32)(framesIn.shape[2])
+    elif len(framesIn.shape)==4:
+        channelsN = (np.uint32)(framesIn.shape[1])
+        sizex = (np.uint32)(framesIn.shape[2])
+        sizey = (np.uint32)(framesIn.shape[3])
     frameStride = (np.int32)(channelsN)
     
     sizex2 = sizex // 2
@@ -33,7 +39,8 @@ def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
                     ArrA, ArrBB, ArrBX, ArrBY, ArrBth, ArrBdil,
                     NeuronXYCandidatesVolume, NeuronNCandidatesVolume,
                     NeuronXYAll, NeuronNAll,
-                    (np.float32)(threshold), (np.float64)(blur))
+                    (np.float32)(threshold), (np.float64)(blur), 
+                    (np.uint32)(checkPlanesN))
     
     diagnostics = {"ArrA": ArrA, "ArrBB": ArrBB, "ArrBX": ArrBX, "ArrBY": ArrBY,
             "ArrBth": ArrBth, "ArrBdil": ArrBdil,
@@ -46,10 +53,10 @@ def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
                     
     return NeuronNAll, NeuronXYAll, diagnostics
 
-def neuronConversion(NeuronN, NeuronXY):
+def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy'):
     framesN = NeuronN.shape[0]
-    NeuronX = NeuronXY//256 
-    NeuronY = (NeuronXY - NeuronX*256)
+    NeuronY = NeuronXY//256 
+    NeuronX = (NeuronXY - NeuronY*256)
     NeuronX *=2
     NeuronY *=2
 
@@ -58,7 +65,10 @@ def neuronConversion(NeuronN, NeuronXY):
     for i in np.arange(framesN):
         start = Limits[i]
         stop = Limits[i+1]
-        Neuron.append(np.array([NeuronY[start:stop],NeuronX[start:stop]]).T)
+        if xyOrdering=='xy':
+            Neuron.append(np.array([NeuronX[start:stop],NeuronY[start:stop]]).T)
+        elif xyOrdering=='yx':
+            Neuron.append(np.array([NeuronY[start:stop],NeuronX[start:stop]]).T)
         
     return Neuron
     
@@ -89,9 +99,9 @@ def neuronConversionXYZ(NeuronN, NeuronXY, volumeFirstFrame,ZZ=[],dz=2.4):
             start = Limits[i]
             stop = Limits[i+1]
             if len(ZZ)==0:
-                Z = np.ones(stop-start)*i*dz
+                Z = np.ones(stop-start)*(i-firstframe)*dz
             else:
-                Z = np.ones(stop-start)*ZZ[l,i]
+                Z = np.ones(stop-start)*ZZ[l][i-firstframe]
             NeuronInVolume[start-Limits[firstframe]:stop-Limits[firstframe]] = \
                                          np.array([NeuronY[start:stop],
                                                    NeuronX[start:stop],
@@ -134,7 +144,7 @@ def findNeuronsFramesSequence(framesIn, maxNeuronN=100000):
     pyns.find_neurons_frames_sequence(
                     framesN, framesIn, sizex, sizey, frameStride,
                     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil,
-                    NeuronXY, NeuronN)
+                    NeuronXY, NeuronN,0.25,0.65)
                     
     return NeuronN, NeuronXY
 
