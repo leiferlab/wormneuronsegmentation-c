@@ -52,14 +52,20 @@ def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     NeuronXYAll = NeuronXYAll[0:NeuronTot]
                     
     return NeuronNAll, NeuronXYAll, diagnostics
-
-def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy'):
+    
+def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
     framesN = NeuronN.shape[0]
     NeuronY = NeuronXY//256 
     NeuronX = (NeuronXY - NeuronY*256)
     NeuronX *=2
     NeuronY *=2
 
+    if flattenFrames: 
+        if xyOrdering=='xy':
+            return np.array([NeuronX,NeuronY]).T
+        elif xyOrdering=='yx':
+            return np.array([NeuronY,NeuronX]).T
+            
     Limits = np.append(np.zeros(1),np.cumsum(NeuronN)).astype(int)
     Neuron = []
     for i in np.arange(framesN):
@@ -72,12 +78,31 @@ def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy'):
         
     return Neuron
     
-def neuronConversionXYZ(NeuronN, NeuronXY, volumeFirstFrame,ZZ=[],dz=2.4):
+def neuronConversionFromFlattenedFrames(NeuronN, Neuron_fl, xyOrdering='xy'):
+    if xyOrdering=="xy":
+        NeuronX, NeuronY = Neuron_fl.T
+    elif xyOrdering=="yx":
+        NeuronY, NeuronX = Neuron_fl.T
+    
+    framesN = NeuronN.shape[0]
+    Limits = np.append(np.zeros(1),np.cumsum(NeuronN)).astype(int)
+    Neuron = []
+    for i in np.arange(framesN):
+        start = Limits[i]
+        stop = Limits[i+1]
+        if xyOrdering=='xy':
+            Neuron.append(np.array([NeuronX[start:stop],NeuronY[start:stop]]).T)
+        elif xyOrdering=='yx':
+            Neuron.append(np.array([NeuronY[start:stop],NeuronX[start:stop]]).T)
+        
+    return Neuron
+    
+def neuronConversionXYZ(NeuronN, NeuronXY, volumeFirstFrame,ZZ=[],dz=2.4,xyOrdering='xyz'):
     #ZZ[volume,frame]
 
     framesN = NeuronN.shape[0]
-    NeuronX = NeuronXY//256 
-    NeuronY = (NeuronXY - NeuronX*256)
+    NeuronY = NeuronXY//256 
+    NeuronX = (NeuronXY - NeuronY*256)
     NeuronX *=2
     NeuronY *=2
     
@@ -86,29 +111,45 @@ def neuronConversionXYZ(NeuronN, NeuronXY, volumeFirstFrame,ZZ=[],dz=2.4):
     NeuronNInVolume = []
     L = len(volumeFirstFrame)-1
     
+    # If dz is set to 1, I am asking for an array of integers that allows me
+    # to index the volume stack directly
+    if dz==1:
+        tipo=np.int
+    else:
+        tipo=np.float
+    
     #For each volume
     for l in np.arange(L):
         firstframe = volumeFirstFrame[l]
         lastframeplusone = volumeFirstFrame[l+1]
         NeuronNInVolume.append(np.sum(NeuronN[firstframe:lastframeplusone]))
-    
-        NeuronInVolume = np.zeros((NeuronNInVolume[-1],3))
+        
+        NeuronInVolume = np.zeros((NeuronNInVolume[-1],3),dtype=tipo)
 
         # For each frame in the volume
         for i in np.arange(firstframe, lastframeplusone):
             start = Limits[i]
             stop = Limits[i+1]
             if len(ZZ)==0:
-                Z = np.ones(stop-start)*(i-firstframe)*dz
+                Z = np.ones(stop-start,dtype=tipo)*(i-firstframe)*dz
             else:
                 Z = np.ones(stop-start)*ZZ[l][i-firstframe]
-            NeuronInVolume[start-Limits[firstframe]:stop-Limits[firstframe]] = \
-                                         np.array([NeuronY[start:stop],
-                                                   NeuronX[start:stop],
-                                                   Z]).T
+            if xyOrdering=='xyz':
+                NeuronInVolume[start-Limits[firstframe]:stop-Limits[firstframe]] = \
+                                             np.array([NeuronX[start:stop],
+                                                       NeuronY[start:stop],
+                                                       Z]).T
+            elif xyOrdering=='zyx':
+                NeuronInVolume[start-Limits[firstframe]:stop-Limits[firstframe]] = \
+                                             np.array([Z,
+                                                       NeuronY[start:stop],
+                                                       NeuronX[start:stop]]).T
         Neuron.append(NeuronInVolume)
         
     return Neuron, NeuronNInVolume
+    
+#def neuronConversionTuple(NeuronN, NeuronXY):
+    
 
 def findNeuronsFramesSequence(framesIn, maxNeuronN=100000):
     '''sh = framesIn.shape
