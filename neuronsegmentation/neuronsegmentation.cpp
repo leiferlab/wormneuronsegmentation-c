@@ -559,7 +559,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// Apply Gaussian blur
 		// 210 us
 		//double blur = 0.65; //0.65
-		cv::GaussianBlur(A, A, cv::Size(3, 3), blur, blur);
+		cv::GaussianBlur(A, A, cv::Size(5, 5), blur, blur);
 
 		// Calculate -d2/dx2 and -d2/dy2 with the filter passed as C.
 		// In this way, the CV_32F images will saturate the positive 
