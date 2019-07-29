@@ -547,7 +547,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		int sizey2 = sizey / 2;
 		
 		cv::Mat OneHalf = cv::Mat(1, 1, CV_32F, cv::Scalar::all(0.5));
-		cv::Mat K = cv::Mat(3, 3, CV_32F, cv::Scalar::all(1));
+		cv::Mat K = cv::Mat(5, 5, CV_32F, cv::Scalar::all(1));
 		
 		// Other variables.
 		double minX, minY, threshX, threshY;
