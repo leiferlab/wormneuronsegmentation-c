@@ -695,6 +695,23 @@ void segment_check2dcandidates_7planes(
     int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
 	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+    
+    // Alias for one of the two versions
+    segment_check2dcandidates_7planes_3maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
+    ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
+    
+    //segment_check2dcandidates_7planes_5maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
+    //ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
+	
+}
+
+
+void segment_check2dcandidates_7planes_3maxdiameter(
+	float ArrB0[], float ArrB1[], float ArrB2[],
+	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
+    int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
 
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
@@ -733,6 +750,81 @@ void segment_check2dcandidates_7planes(
 		            (Bxy > ArrB4[index]) &&
 		            (Bxy > ArrB4[index + 1]) &&
 		            (Bxy > ArrB4[index + sizeBx]) &&
+		            
+		            (Bxy > ArrB5[index - 1]) &&
+		            (Bxy > ArrB5[index]) &&
+		            (Bxy > ArrB5[index + 1]) &&
+		            (Bxy > ArrB5[index + sizeBx]) ) {
+			    *(NeuronXYout+k) = index; 
+			    k++;
+		    }
+		}
+	}
+	NeuronNout = k;
+}
+
+void segment_check2dcandidates_7planes_5maxdiameter(
+	float ArrB0[], float ArrB1[], float ArrB2[],
+	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
+    int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+
+	// Brute force check if the candidate neurons found on each plane are
+	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
+	// just in their plane.
+	// This function can run as soon as the 5 planes are available, so that
+	// you don't have to wait until the full volume is ready before starting
+	// this brute force check.
+	
+	float Bxy;
+	int32_t k = 0;
+	uint32_t index;
+	uint32_t upperlimit = sizeBx*sizeBy - 2*sizeBx;
+
+	for (uint i = 0; i < NeuronNin; i++) {
+		index = NeuronXYin[i];
+		Bxy = ArrB3[index];
+
+		if (index > 2*((uint32_t)sizeBx) && index < upperlimit) {
+		    if (    (Bxy > ArrB0[index]) &&
+		    
+		            (Bxy > ArrB6[index]) &&
+		            
+		            (Bxy > ArrB1[index - sizeBx]) &&
+		            (Bxy > ArrB1[index - 1]) &&
+		            (Bxy > ArrB1[index]) &&
+		            (Bxy > ArrB1[index + 1]) &&
+		            (Bxy > ArrB1[index + sizeBx]) &&
+		            
+		            (Bxy > ArrB2[index - 2*sizeBx]) &&
+		            (Bxy > ArrB2[index - sizeBx-1]) &&
+		            (Bxy > ArrB2[index - sizeBx]) &&
+		            (Bxy > ArrB2[index - sizeBx+1]) &&
+		            (Bxy > ArrB2[index - 2]) &&
+		            (Bxy > ArrB2[index - 1]) &&
+		            (Bxy > ArrB2[index]) &&
+		            (Bxy > ArrB2[index + 1]) &&
+		            (Bxy > ArrB2[index + 2]) &&
+		            (Bxy > ArrB2[index + sizeBx-1]) &&
+		            (Bxy > ArrB2[index + sizeBx]) &&
+		            (Bxy > ArrB2[index + sizeBx+1]) &&
+		            (Bxy > ArrB2[index + 2*sizeBx]) &&
+		            
+		            (Bxy > ArrB4[index - 2*sizeBx]) &&
+		            (Bxy > ArrB4[index - sizeBx-1]) &&
+		            (Bxy > ArrB4[index - sizeBx]) &&
+		            (Bxy > ArrB4[index - sizeBx+1]) &&
+		            (Bxy > ArrB4[index - 2]) &&
+		            (Bxy > ArrB4[index - 1]) &&
+		            (Bxy > ArrB4[index]) &&
+		            (Bxy > ArrB4[index + 1]) &&
+		            (Bxy > ArrB4[index + 2]) &&
+		            (Bxy > ArrB4[index + sizeBx-1]) &&
+		            (Bxy > ArrB4[index + sizeBx]) &&
+		            (Bxy > ArrB4[index + sizeBx+1]) &&
+		            (Bxy > ArrB4[index + 2*sizeBx]) &&
+
 		            
 		            (Bxy > ArrB5[index - 1]) &&
 		            (Bxy > ArrB5[index]) &&

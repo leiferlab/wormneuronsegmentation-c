@@ -12,8 +12,23 @@ void segment_check2dcandidates_5planes(
 	float ArrB3[], float ArrB4[], int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
 	uint32_t *NeuronXYout, uint32_t &NeuronNout);
-	
+
+// This is an alias for either of the two versions (3 or 5 max diameter)
 void segment_check2dcandidates_7planes(
+	float ArrB0[], float ArrB1[], float ArrB2[],
+	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
+	int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	uint32_t *NeuronXYout, uint32_t &NeuronNout);
+
+void segment_check2dcandidates_7planes_3maxdiameter(
+	float ArrB0[], float ArrB1[], float ArrB2[],
+	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
+	int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	uint32_t *NeuronXYout, uint32_t &NeuronNout);
+	
+void segment_check2dcandidates_7planes_5maxdiameter(
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
 	int32_t sizeBx, int32_t sizeBy, 
