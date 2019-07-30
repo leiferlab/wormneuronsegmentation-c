@@ -726,7 +726,7 @@ void segment_check2dcandidates_7planes_3maxdiameter(
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
 	// just in their plane.
-	// This function can run as soon as the 5 planes are available, so that
+	// This function can run as soon as the 7 planes are available, so that
 	// you don't have to wait until the full volume is ready before starting
 	// this brute force check.
 	
@@ -783,7 +783,7 @@ void segment_check2dcandidates_7planes_5maxdiameter(
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
 	// just in their plane.
-	// This function can run as soon as the 5 planes are available, so that
+	// This function can run as soon as the 7 planes are available, so that
 	// you don't have to wait until the full volume is ready before starting
 	// this brute force check.
 	
