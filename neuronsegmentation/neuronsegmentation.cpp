@@ -51,7 +51,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
         
     // Run the single frame segmentation to initialize maxX/YInStack
     segment_singleframe_pipeline(ImgIn, sizex, sizey, 
-        C, sizeC, A, B, BX, BY, Bth, Bdil, 
+        C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
         NeuronXY, NeuronN[0],
         maxX, maxY, maxXInStack, maxYInStack, threshold, blur, true);
         
@@ -65,7 +65,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
               
         // Run the single frame segmentation.
         segment_singleframe_pipeline(ImgIn, sizex, sizey, 
-            C, sizeC, A, B, BX, BY, Bth, Bdil, 
+            C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
             NeuronXY, NeuronN[nu],
             maxX, maxY, maxXInStack, maxYInStack, threshold, blur, true);
         
@@ -101,7 +101,7 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronXYCandidatesVolume[], 
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
-	float threshold, double blur, uint32_t checkPlanesN
+	float threshold, double blur, uint32_t checkPlanesN, uint32_t xydiameter
 	) {
 	
 	/*
@@ -157,7 +157,7 @@ void find_neurons(uint16_t framesIn[],
 	cv::Mat Bdil = cv::Mat(sizex2, sizey2, CV_32F, ArrBdil);
 	cv::Mat C = cv::Mat(sizeC, 1, CV_32F, ArrC);
 	cv::Mat OneHalf = cv::Mat(1, 1, CV_32F, cv::Scalar::all(0.5));
-	cv::Mat K = cv::Mat(3, 3, CV_32F, cv::Scalar::all(1));
+	cv::Mat K = cv::Mat(xydiameter, xydiameter, CV_32F, cv::Scalar::all(1));
 	
 	cv::Mat B;
        
@@ -195,7 +195,7 @@ void find_neurons(uint16_t framesIn[],
         // With the adjusted pointers and Mat headers, run the single frame
         // segmentation.
         segment_singleframe_pipeline(ImgIn, sizex, sizey, 
-            C, sizeC, A, B, BX, BY, Bth, Bdil, 
+            C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
             NeuronXYCandidates, NeuronNCandidatesVolume[nu],
             maxX, maxY, maxXInStack, maxYInStack, threshold, blur, true);
         
@@ -235,7 +235,7 @@ void find_neurons(uint16_t framesIn[],
             // With the adjusted pointers and Mat headers, run the single frame
             // segmentation.
             segment_singleframe_pipeline(ImgIn, sizex, sizey, 
-                C, sizeC, A, B, BX, BY, Bth, Bdil, 
+                C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
                 NeuronXYCandidates, NeuronNCandidatesVolume[nu],
                 maxX, maxY, maxXInStack, maxYInStack, threshold, blur, true);
             /**
@@ -334,7 +334,7 @@ void find_neurons(uint16_t framesIn[],
             }
             
             // with B2 at nu=framesInVolume-2 (B4=Zero)
-            nu = framesInVolume - 2;
+            int nu = framesInVolume - 2;
             B0 = ArrBB + (framesInVolume-4)*sizexy2;
             B1 = ArrBB + (framesInVolume-3)*sizexy2;
             B2 = ArrBB + (framesInVolume-2)*sizexy2;
@@ -389,7 +389,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    xydiameter);
 
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -409,7 +410,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    xydiameter);
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -429,7 +431,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    xydiameter);
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -453,13 +456,14 @@ void find_neurons(uint16_t framesIn[],
                 segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    xydiameter);
                 
                 NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             }
             
             // with B3 at nu=framesInVolume-3 (B6=Zero)
-            nu = framesInVolume - 3;
+            int nu = framesInVolume - 3;
             B0 = ArrBB + (framesInVolume-6)*sizexy2;
             B1 = ArrBB + (framesInVolume-5)*sizexy2;
             B2 = ArrBB + (framesInVolume-4)*sizexy2;
@@ -474,7 +478,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    xydiameter);
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -494,7 +499,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    xydiameter);
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -514,7 +520,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    xydiameter);
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
         }
@@ -529,7 +536,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 	int32_t sizex, int32_t sizey, 
 	cv::Mat& C, int32_t sizeC, 
 	cv::Mat& A, cv::Mat& B, cv::Mat& BX, cv::Mat& BY, 
-	cv::Mat& Bth, cv::Mat& Bdil,
+	cv::Mat& Bth, cv::Mat& Bdil, cv::Mat& K,
 	uint32_t NeuronXY[], uint32_t &NeuronN, 
 	double &maxX, double &maxY, double maxXInStack, double maxYInStack,
 	float threshold, double blur, bool resize) {
@@ -547,7 +554,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		int sizey2 = sizey / 2;
 		
 		cv::Mat OneHalf = cv::Mat(1, 1, CV_32F, cv::Scalar::all(0.5));
-		cv::Mat K = cv::Mat(5, 5, CV_32F, cv::Scalar::all(1));
+		//cv::Mat K = cv::Mat(5, 5, CV_32F, cv::Scalar::all(1));
 		
 		// Other variables.
 		double minX, minY, threshX, threshY;
@@ -694,14 +701,17 @@ void segment_check2dcandidates_7planes(
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
     int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+	uint32_t *NeuronXYout, uint32_t &NeuronNout, uint32_t maxdiameter) {
     
     // Alias for one of the two versions
-    segment_check2dcandidates_7planes_3maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
-    ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
     
-    //segment_check2dcandidates_7planes_5maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
-    //ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
+    if(maxdiameter==3){
+        segment_check2dcandidates_7planes_3maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
+        ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
+    } else if(maxdiameter==5){
+        segment_check2dcandidates_7planes_5maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
+        ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
+    }
 	
 }
 

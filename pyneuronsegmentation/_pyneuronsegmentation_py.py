@@ -2,7 +2,7 @@ import numpy as np
 import pyneuronsegmentation as pyns
 
 def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
-    threshold=0.25, blur=0.65, checkPlanesN=5,
+    threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
     maxNeuronN=100000, maxFramesInVolume=100):
     
     framesN = (np.uint32)(framesIn.shape[0])
@@ -40,7 +40,7 @@ def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
                     NeuronXYCandidatesVolume, NeuronNCandidatesVolume,
                     NeuronXYAll, NeuronNAll,
                     (np.float32)(threshold), (np.float64)(blur), 
-                    (np.uint32)(checkPlanesN))
+                    (np.uint32)(checkPlanesN), (np.uint32)(xydiameter))
     
     diagnostics = {"ArrA": ArrA, "ArrBB": ArrBB, "ArrBX": ArrBX, "ArrBY": ArrBY,
             "ArrBth": ArrBth, "ArrBdil": ArrBdil,

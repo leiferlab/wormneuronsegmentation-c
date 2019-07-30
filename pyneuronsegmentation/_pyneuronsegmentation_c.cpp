@@ -208,19 +208,20 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
     float threshold;
     double blur;
     uint32_t checkPlanesN;
+    uint32_t xydiameter;
     
     PyObject *ArrA_o, *ArrBB_o, *ArrBX_o, *ArrBY_o, *ArrBth_o, *ArrBdil_o;
     PyObject *NeuronXYCandidatesVolume_o, *NeuronNCandidatesVolume_o;
     PyObject *NeuronXYAll_o, *NeuronNAll_o;
     
     
-    if(!PyArg_ParseTuple(args, "iOiiiiOOOOOOOOOOOfdi", 
+    if(!PyArg_ParseTuple(args, "iOiiiiOOOOOOOOOOOfdii", 
             &framesN, &framesIn_o, &sizex, &sizey, &framesStride,
             &volumeN, &volumeFirstFrame_o,
             &ArrA_o, &ArrBB_o, &ArrBX_o, &ArrBY_o, &ArrBth_o, &ArrBdil_o,
             &NeuronXYCandidatesVolume_o, &NeuronNCandidatesVolume_o,
             &NeuronXYAll_o, &NeuronNAll_o,
-            &threshold, &blur, &checkPlanesN)) return NULL;
+            &threshold, &blur, &checkPlanesN, &xydiameter)) return NULL;
     
     PyObject *framesIn_a = PyArray_FROM_OTF(framesIn_o, NPY_UINT16, NPY_IN_ARRAY);
     PyObject *volumeFirstFrame_a = PyArray_FROM_OTF(volumeFirstFrame_o, NPY_UINT32, NPY_IN_ARRAY);
@@ -292,7 +293,7 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
         NeuronXYCandidatesVolume, 
 	    NeuronNCandidatesVolume,
 	    NeuronXYAll, NeuronNAll,
-	    threshold, blur, checkPlanesN);
+	    threshold, blur, checkPlanesN, xydiameter);
     
     //////////////////////////////////
     //////////////////////////////////
