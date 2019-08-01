@@ -3,7 +3,7 @@ import pyneuronsegmentation as pyns
 
 def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
-    maxNeuronN=100000, maxFramesInVolume=100):
+    maxNeuronN=100000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
     
     framesN = (np.uint32)(framesIn.shape[0])
     if len(framesIn.shape)==3:
@@ -33,14 +33,18 @@ def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     NeuronNCandidatesVolume = np.zeros(maxFramesInVolume, dtype=np.uint32)
     NeuronXYAll = np.zeros(maxNeuronN, dtype=np.uint32)
     NeuronNAll  = np.zeros(framesN, dtype=np.uint32)
+    NeuronCurvatureAll = np.zeros(maxNeuronN*extractCurvatureBoxSize, 
+                                  dtype=np.float32)
     
     pyns.find_neurons(framesN, framesIn, sizex, sizey, frameStride,
                     volumeN, volumeFirstFrame,
                     ArrA, ArrBB, ArrBX, ArrBY, ArrBth, ArrBdil,
                     NeuronXYCandidatesVolume, NeuronNCandidatesVolume,
                     NeuronXYAll, NeuronNAll,
+                    NeuronCurvatureAll,
                     (np.float32)(threshold), (np.float64)(blur), 
-                    (np.uint32)(checkPlanesN), (np.uint32)(xydiameter))
+                    (np.uint32)(checkPlanesN), (np.uint32)(xydiameter),
+                    (np.uint32)(extractCurvatureBoxSize))
     
     diagnostics = {"ArrA": ArrA, "ArrBB": ArrBB, "ArrBX": ArrBX, "ArrBY": ArrBY,
             "ArrBth": ArrBth, "ArrBdil": ArrBdil,
@@ -50,8 +54,12 @@ def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     NeuronNAll = NeuronNAll[0:framesN]
     NeuronTot = np.sum(NeuronNAll)
     NeuronXYAll = NeuronXYAll[0:NeuronTot]
+    NeuronCurvature = NeuronCurvatureAll[0:(int)(NeuronTot*extractCurvatureBoxSize)]
+    
+    np.clip(NeuronCurvature,0,None,NeuronCurvature)
+    NeuronCurvature = NeuronCurvature.reshape((NeuronTot,extractCurvatureBoxSize))
                     
-    return NeuronNAll, NeuronXYAll, diagnostics
+    return NeuronNAll, NeuronXYAll, NeuronCurvature, diagnostics
     
 def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
     framesN = NeuronN.shape[0]
@@ -111,9 +119,9 @@ def neuronConversionXYZ(NeuronN, NeuronXY, volumeFirstFrame,ZZ=[],dz=2.4,xyOrder
     NeuronNInVolume = []
     L = len(volumeFirstFrame)-1
     
-    # If dz is set to 1, I am asking for an array of integers that allows me
+    # If dz is set to int(1), I am asking for an array of integers that allows me
     # to index the volume stack directly
-    if dz==1:
+    if dz==1 and type(dz)==int:
         tipo=np.int
     else:
         tipo=np.float
@@ -147,6 +155,69 @@ def neuronConversionXYZ(NeuronN, NeuronXY, volumeFirstFrame,ZZ=[],dz=2.4,xyOrder
         Neuron.append(NeuronInVolume)
         
     return Neuron, NeuronNInVolume
+    
+def neuronConversionXYZtoXY(NeuronXYZ, NeuronNInVolume, volumeFirstFrame):
+    '''
+    volumeFirstFrame has to contain also the final+1 frame
+    '''
+    
+    # the output is a list of the sets of neurons in each frame
+    NeuronXY = []
+    NeuronN = []
+    Neuron = []
+    nVolume = len(NeuronNInVolume)
+    
+    for n in np.arange(nVolume):
+        Brain = np.rint(NeuronXYZ[n]).astype(np.int)
+        for f in np.arange(volumeFirstFrame[n+1]-volumeFirstFrame[n]):
+            ii = np.where(Brain[:,2]==f)
+            neuronxy = (Brain[ii,1]//2)*256+Brain[ii,0]//2
+            NeuronXY.append(neuronxy[0])
+            Neuron.append(Brain[ii,0:2][0])
+            NeuronN.append(len(Neuron[-1]))
+            
+    NeuronXY = [ne for neframe in NeuronXY for ne in neframe]
+    return np.array(NeuronXY), np.array(NeuronN), Neuron
+    
+def curvatureConversion(NeuronCurvature, NeuronNInVolume):
+    NeuronCurvatureVSplit = []
+    k = 0
+    for n in NeuronNInVolume:
+        n = int(n)
+        NeuronCurvatureVSplit.append(NeuronCurvature[k:k+n])
+        k += n
+        
+    return NeuronCurvatureVSplit
+    
+def stabilizeZ(NeuronXYZ, NeuronCurvatureVSplit, method=""):
+    '''
+    Take the curvatures along z right above and below the found neuron and 
+    stabilize the z position.
+    '''
+    NeuronXYZout = []
+    if NeuronCurvatureVSplit[0].shape[1]==51:
+        z = np.array([-3.,-2.,-1.,0.,1.,2.,3.])
+        
+        for i in np.arange(len(NeuronXYZ)):
+            Brain = NeuronXYZ[i]
+            Curvature = NeuronCurvatureVSplit[i]
+            if method=="xyMaxCurvature":
+                c1 = Curvature[:,0]
+                c2 = np.max(Curvature[:,np.arange(1,6)],axis=1)
+                c3 = np.max(Curvature[:,np.arange(6,19)],axis=1)
+                c4 = np.max(Curvature[:,np.arange(19,32)],axis=1)
+                c5 = np.max(Curvature[:,np.arange(32,45)],axis=1)
+                c6 = np.max(Curvature[:,np.arange(45,50)],axis=1)
+                c7 = Curvature[:,50]
+                Curv = np.copy(np.array([c1,c2,c3,c4,c5,c6,c7]).T)
+            else:
+                Curv = Curvature[:,[0,3,12,25,38,47,50]] #look just along z
+            
+            Brain[:,2] += np.sum(z*Curv,axis=1)/np.sum(Curv,axis=1)
+            NeuronXYZout.append(Brain)
+
+    return NeuronXYZout
+        
     
 #def neuronConversionTuple(NeuronN, NeuronXY):
     

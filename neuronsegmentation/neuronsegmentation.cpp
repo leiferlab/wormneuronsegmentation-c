@@ -101,7 +101,9 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronXYCandidatesVolume[], 
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
-	float threshold, double blur, uint32_t checkPlanesN, uint32_t xydiameter
+	float NeuronCurvatureAll[],
+	float threshold, double blur, uint32_t checkPlanesN, uint32_t xydiameter,
+	uint32_t extractCurvatureBoxSize
 	) {
 	
 	/*
@@ -121,6 +123,13 @@ void find_neurons(uint16_t framesIn[],
 	
 	//This will be needed to correctly move the pointer in NeuronXYAll.
 	uint32_t NeuronNInAllPreviousVolumes = 0;
+	
+	//Pointer to specific positions in the NeuronCurvatureAll array.
+	float *NeuronCurvature = NeuronCurvatureAll;
+	
+	//This is the total size of the box out of which curvatures are extracted
+	//for the "watershed".
+	// passed as parameter extractCurvatureBoxSize
     
     // Size of the arrays / images. sizex2 and sizey2 are the sizes of the 
     // resized images.
@@ -391,6 +400,11 @@ void find_neurons(uint16_t framesIn[],
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
                     xydiameter);
+                    
+            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+	                NeuronCurvature, extractCurvatureBoxSize);
+            NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
 
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -412,6 +426,11 @@ void find_neurons(uint16_t framesIn[],
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
                     xydiameter);
+                    
+            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+	                NeuronCurvature, extractCurvatureBoxSize);
+            NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -433,6 +452,11 @@ void find_neurons(uint16_t framesIn[],
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
                     xydiameter);
+                    
+            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+	                NeuronCurvature, extractCurvatureBoxSize);
+            NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -459,6 +483,11 @@ void find_neurons(uint16_t framesIn[],
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
                     xydiameter);
                 
+                segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+	                NeuronCurvature, extractCurvatureBoxSize);
+                NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
+                
                 NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             }
             
@@ -481,6 +510,11 @@ void find_neurons(uint16_t framesIn[],
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
                     xydiameter);
                     
+            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+	                NeuronCurvature, extractCurvatureBoxSize);
+            NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
+                    
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
             // with B3 at nu=framesInVolume-2 (B6=B5=Zero)
@@ -502,6 +536,11 @@ void find_neurons(uint16_t framesIn[],
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
                     xydiameter);
                     
+            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+	                NeuronCurvature, extractCurvatureBoxSize);
+            NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
+                    
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
             // with B3 at nu=framesInVolume-1 (B6=Zero)
@@ -522,6 +561,11 @@ void find_neurons(uint16_t framesIn[],
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
                     xydiameter);
+                    
+            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+	                NeuronCurvature, extractCurvatureBoxSize);
+            NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
         }
@@ -846,5 +890,115 @@ void segment_check2dcandidates_7planes_5maxdiameter(
 		}
 	}
 	NeuronNout = k;
+}
+
+void segment_extract_curvature(
+	float ArrB0[], float ArrB1[], float ArrB2[],
+	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
+    int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	float *NeuronCurvatureOut, uint32_t totalBoxSize) {
+
+    /**
+    Parameters
+    ----------
+    ArrB0, ArrB1, ArrB2, ArrB3, ArrB4, ArrB5, ArrB6 : float arrays
+        Arrays containing the curvature in the current plane and the
+        neighboring ones.
+    sizeBx, sizeBy : int32_t
+        Sizes of the single images.
+    NeuronXYin : uint32_t array
+        Array containing the linearized indexes of the (confirmed) neurons. The
+        indexes are relative to the frame in which the neuron has been found.
+    NeuronNin : uint32_t
+        Number of neurons in the current frame (the one corresponding to the
+        curvature B3).
+    NeuronCurvatureOut : pointer to float
+        Pointing to the array storing the curvatures, at the first free
+        position. After calling this function, this pointer has to be moved by
+        NeuronNIn*totalBoxSize, so that the next time it is passed to this
+        function, it will point to the first free positions.
+    
+    Returns
+    -------
+    void.
+    
+    Notes
+    -----
+    Given the already *confirmed* neurons (not all the candidates), save the
+    curvatures of the neighboring points. For the time being, hard code a box.
+    This works like a kind of watershed, giving you as a result the extension 
+    of the neuron. 
+    
+    Currently using the "7x5" box of the check 7 planes 5 max diameter.
+	**/
+	
+	int32_t k = 0;
+	uint32_t index;
+    
+    if(totalBoxSize==51){
+	for (uint i = 0; i < NeuronNin; i++) {
+	    index = NeuronXYin[i];
+		*(NeuronCurvatureOut+k+0) = ArrB0[index];
+		
+		*(NeuronCurvatureOut+k+1)  = ArrB1[index - sizeBx];
+		*(NeuronCurvatureOut+k+2)  = ArrB1[index - 1];
+		*(NeuronCurvatureOut+k+3)  = ArrB1[index];
+		*(NeuronCurvatureOut+k+4)  = ArrB1[index + 1];
+		*(NeuronCurvatureOut+k+5)  = ArrB1[index + sizeBx];
+		
+		*(NeuronCurvatureOut+k+6)  = ArrB2[index - 2*sizeBx];
+		*(NeuronCurvatureOut+k+7)  = ArrB2[index - sizeBx-1];
+		*(NeuronCurvatureOut+k+8)  = ArrB2[index - sizeBx];
+		*(NeuronCurvatureOut+k+9)  = ArrB2[index - sizeBx+1];
+		*(NeuronCurvatureOut+k+10) = ArrB2[index - 2];
+		*(NeuronCurvatureOut+k+11) = ArrB2[index - 1];
+		*(NeuronCurvatureOut+k+12) = ArrB2[index];
+		*(NeuronCurvatureOut+k+13) = ArrB2[index + 1];
+		*(NeuronCurvatureOut+k+14) = ArrB2[index + 2];
+		*(NeuronCurvatureOut+k+15) = ArrB2[index + sizeBx-1];
+		*(NeuronCurvatureOut+k+16) = ArrB2[index + sizeBx];
+		*(NeuronCurvatureOut+k+17) = ArrB2[index + sizeBx+1];
+		*(NeuronCurvatureOut+k+18) = ArrB2[index + 2*sizeBx];
+		
+		*(NeuronCurvatureOut+k+19) = ArrB3[index - 2*sizeBx];
+		*(NeuronCurvatureOut+k+20) = ArrB3[index - sizeBx-1];
+		*(NeuronCurvatureOut+k+21) = ArrB3[index - sizeBx];
+		*(NeuronCurvatureOut+k+22) = ArrB3[index - sizeBx+1];
+		*(NeuronCurvatureOut+k+23) = ArrB3[index - 2];
+		*(NeuronCurvatureOut+k+24) = ArrB3[index - 1];
+		*(NeuronCurvatureOut+k+25) = ArrB3[index];
+		*(NeuronCurvatureOut+k+26) = ArrB3[index + 1];
+		*(NeuronCurvatureOut+k+27) = ArrB3[index + 2];
+		*(NeuronCurvatureOut+k+28) = ArrB3[index + sizeBx-1];
+		*(NeuronCurvatureOut+k+29) = ArrB3[index + sizeBx];
+		*(NeuronCurvatureOut+k+30) = ArrB3[index + sizeBx+1];
+		*(NeuronCurvatureOut+k+31) = ArrB3[index + 2*sizeBx];
+		
+		*(NeuronCurvatureOut+k+32) = ArrB4[index - 2*sizeBx];
+		*(NeuronCurvatureOut+k+33) = ArrB4[index - sizeBx-1];
+		*(NeuronCurvatureOut+k+34) = ArrB4[index - sizeBx];
+		*(NeuronCurvatureOut+k+35) = ArrB4[index - sizeBx+1];
+		*(NeuronCurvatureOut+k+36) = ArrB4[index - 2];
+		*(NeuronCurvatureOut+k+37) = ArrB4[index - 1];
+		*(NeuronCurvatureOut+k+38) = ArrB4[index];
+		*(NeuronCurvatureOut+k+39) = ArrB4[index + 1];
+		*(NeuronCurvatureOut+k+40) = ArrB4[index + 2];
+		*(NeuronCurvatureOut+k+41) = ArrB4[index + sizeBx-1];
+		*(NeuronCurvatureOut+k+42) = ArrB4[index + sizeBx];
+		*(NeuronCurvatureOut+k+43) = ArrB4[index + sizeBx+1];
+		*(NeuronCurvatureOut+k+44) = ArrB4[index + 2*sizeBx];
+		
+		*(NeuronCurvatureOut+k+45) = ArrB5[index - sizeBx];
+		*(NeuronCurvatureOut+k+46) = ArrB5[index - 1];
+		*(NeuronCurvatureOut+k+47) = ArrB5[index];
+		*(NeuronCurvatureOut+k+48) = ArrB5[index + 1];
+		*(NeuronCurvatureOut+k+49) = ArrB5[index + sizeBx];
+		
+		*(NeuronCurvatureOut+k+50) = ArrB6[index];
+		
+		k += totalBoxSize;
+	}
+	}
 }
 
