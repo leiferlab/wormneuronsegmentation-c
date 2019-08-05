@@ -1,4 +1,4 @@
-build/
 a
 appunti
-pyneuronsegmentation/__pycache__/
+build/*
+*__pycache__

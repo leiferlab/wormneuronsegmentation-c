@@ -1,5 +1,5 @@
 import numpy as np
-import pyneuronsegmentation as pyns
+import wormneuronsegmentation as wormns
 
 def get_curvatureBoxProperties():
     boxIndices = [np.arange(1),np.arange(1,6),np.arange(6,19),np.arange(19,32),np.arange(32,45),np.arange(45,50),np.arange(50,51)]
@@ -42,7 +42,7 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     NeuronCurvatureAll = np.zeros(maxNeuronN*extractCurvatureBoxSize, 
                                   dtype=np.float32)
     
-    pyns.find_neurons(framesN, framesIn, sizex, sizey, frameStride,
+    wormns.find_neurons(framesN, framesIn, sizex, sizey, frameStride,
                     volumeN, volumeFirstFrame,
                     ArrA, ArrBB, ArrBX, ArrBY, ArrBth, ArrBdil,
                     NeuronXYCandidatesVolume, NeuronNCandidatesVolume,
@@ -109,7 +109,7 @@ def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
                         'boxNPlane': curvatureboxNPlanes, 
                         'boxIndices': curvatureboxIndices}
     
-    NeuronYX = pyns.neuronConversion(NeuronN, NeuronXY,xyOrdering='yx')
+    NeuronYX = wormns.neuronConversion(NeuronN, NeuronXY,xyOrdering='yx')
     
     return NeuronYX, NeuronProperties
     
@@ -161,9 +161,9 @@ def findNeuronsFramesSequence(framesIn, maxNeuronN=100000):
     frameStride = (np.uint32)(framesStride)
     
     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN = \
-            pyns.initVariables(framesN,sizex,sizey,maxNeuronN)
+            wormns.initVariables(framesN,sizex,sizey,maxNeuronN)
     
-    pyns.find_neurons_frames_sequence(
+    wormns.find_neurons_frames_sequence(
                     framesN, framesIn, sizex, sizey, frameStride,
                     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil,
                     NeuronXY, NeuronN,0.25,0.65)

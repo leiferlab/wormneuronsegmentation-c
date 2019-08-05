@@ -1,6 +1,6 @@
 /**
     wormneuronsegmentation
-    _pyneuronsegmentation_c.cpp
+    _wormneuronsegmentation_c.cpp
     Finds nuclei of neurons in stack of fluorescence images.
 
     @author Francesco Randi
@@ -11,17 +11,17 @@
 #include <numpy/arrayobject.h>
 #include <iostream>
 #include <stdint.h>
-#include "../neuronsegmentation/neuronsegmentation.cpp"
+#include "../neuronsegmentation_c/neuronsegmentation.cpp"
 
-static PyObject *pyns_find_neurons(PyObject *self, PyObject *args);
-static PyObject *pyns_find_neurons_frames_sequence(PyObject *self, PyObject *args);
+static PyObject *wormns_find_neurons(PyObject *self, PyObject *args);
+static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *args);
 
 /////// Python-module-related functions and tables
 
 // The module's method table
-static PyMethodDef _pyneuronsegmentation_cMethods[] = {
-    {"find_neurons", pyns_find_neurons, METH_VARARGS, ""},
-    {"find_neurons_frames_sequence", pyns_find_neurons_frames_sequence, METH_VARARGS, 
+static PyMethodDef _wormneuronsegmentation_cMethods[] = {
+    {"find_neurons", wormns_find_neurons, METH_VARARGS, ""},
+    {"find_neurons_frames_sequence", wormns_find_neurons_frames_sequence, METH_VARARGS, 
         "\
         Parameters \n\
         ---------- \n\
@@ -85,24 +85,24 @@ static PyMethodDef _pyneuronsegmentation_cMethods[] = {
 };
 
 // The module definition function
-static struct PyModuleDef _pyneuronsegmentation_c = {
+static struct PyModuleDef _wormneuronsegmentation_c = {
     PyModuleDef_HEAD_INIT,
-    "_pyneuronsegmentation_c",
+    "_wormneuronsegmentation_c",
     NULL, // Module documentation
     -1,
-    _pyneuronsegmentation_cMethods
+    _wormneuronsegmentation_cMethods
 };
 
 // The module initialization function
-PyMODINIT_FUNC PyInit__pyneuronsegmentation_c(void) { 
+PyMODINIT_FUNC PyInit__wormneuronsegmentation_c(void) { 
         import_array(); //Numpy
-        return PyModule_Create(&_pyneuronsegmentation_c);
+        return PyModule_Create(&_wormneuronsegmentation_c);
     }
     
     
 //////// The actual functions of the modules
 
-static PyObject *pyns_find_neurons_frames_sequence(PyObject *self, PyObject *args) {
+static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *args) {
 
     int framesN;
     PyObject *framesIn_o;
@@ -202,7 +202,7 @@ static PyObject *pyns_find_neurons_frames_sequence(PyObject *self, PyObject *arg
     return Py_None;
 }
 
-static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
+static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
 
     int framesN;
     PyObject *framesIn_o;

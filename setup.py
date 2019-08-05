@@ -32,16 +32,16 @@ elif os.name == 'nt':
 
 includes.append(numpy.get_include())
 
-pyneuronsegmentation_c = Extension('pyneuronsegmentation._pyneuronsegmentation_c',
-                    sources = ['pyneuronsegmentation/_pyneuronsegmentation_c.cpp'],
+wormneuronsegmentation_c = Extension('wormneuronsegmentation._wormneuronsegmentation_c',
+                    sources = ['wormneuronsegmentation/_wormneuronsegmentation_c.cpp'],
                     include_dirs = includes,
                     extra_objects=extra_objects,
                     extra_compile_args=['-O3'])
 
-setup (name = 'pyneuronsegmentation',
+setup (name = 'wormneuronsegmentation',
        version = '1.0',
        author='Francesco Randi @ Leiferlab, Princeton Physics',
        author_email='francesco.randi@gmail.com',
-       description = 'neuronsegmentation',
-       py_modules = ['pyneuronsegmentation._pyneuronsegmentation_py'],
-       ext_modules = [pyneuronsegmentation_c])
+       description = 'Optimized segmentation code to locate the nuclei of neurons in stacks of fluorescence images of the worm\'s brain',
+       py_modules = ['wormneuronsegmentation._wormneuronsegmentation_py'],
+       ext_modules = [wormneuronsegmentation_c])
