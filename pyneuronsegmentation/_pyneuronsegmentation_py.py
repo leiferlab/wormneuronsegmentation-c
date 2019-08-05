@@ -1,9 +1,15 @@
 import numpy as np
 import pyneuronsegmentation as pyns
 
-def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
+def get_curvatureBoxProperties():
+    boxIndices = [np.arange(1),np.arange(1,6),np.arange(6,19),np.arange(19,32),np.arange(32,45),np.arange(45,50),np.arange(50,51)]
+    nPlane = 7
+    
+    return {'boxIndices': boxIndices, 'nPlane': nPlane}
+
+def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
-    maxNeuronN=100000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
+    maxNeuronN=1000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
     
     framesN = (np.uint32)(framesIn.shape[0])
     if len(framesIn.shape)==3:
@@ -85,6 +91,75 @@ def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
             Neuron.append(np.array([NeuronY[start:stop],NeuronX[start:stop]]).T)
         
     return Neuron
+    
+def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
+    threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
+    maxNeuronN=1000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
+    
+    NeuronN, NeuronXY, NeuronCurvature, diagnostics = \
+        _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
+            threshold,blur,checkPlanesN,xydiameter,maxNeuronN,maxFramesInVolume,
+            extractCurvatureBoxSize)
+            
+    curvatureBoxProperties = get_curvatureBoxProperties()
+    curvatureboxIndices = curvatureBoxProperties['boxIndices']
+    curvatureboxNPlanes = curvatureBoxProperties['nPlane']
+    
+    NeuronProperties = {'curvature': NeuronCurvature, 
+                        'boxNPlane': curvatureboxNPlanes, 
+                        'boxIndices': curvatureboxIndices}
+    
+    NeuronYX = pyns.neuronConversion(NeuronN, NeuronXY,xyOrdering='yx')
+    
+    return NeuronYX, NeuronProperties
+    
+
+def findNeuronsFramesSequence(framesIn, maxNeuronN=100000):
+    '''sh = framesIn.shape
+    if len(sh) == 2:
+        framesN = 1
+        framesStride = 1
+        sizex = sh[-2]
+        sizey = sh[-1]//2
+    if len(sh) == 3:
+        framesN = sh[0]
+        framesStride = 1
+        sizex = sh[-2]
+        sizey = sh[-1]//2
+    if len(sh) == 4:
+        framesN = sh[0]
+        framesStride = sh[1]
+        sizex = sh[-2]
+        sizey = sh[-1]//framesStride
+    print(sh)'''
+    framesN=framesIn.shape[0]
+    framesStride=2
+    sizex=512
+    sizey=512
+    
+    framesN = (np.uint32)(framesN)
+    sizex = (np.uint32)(sizex)
+    sizey = (np.uint32)(sizey)
+    frameStride = (np.uint32)(framesStride)
+    
+    ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN = \
+            pyns.initVariables(framesN,sizex,sizey,maxNeuronN)
+    
+    pyns.find_neurons_frames_sequence(
+                    framesN, framesIn, sizex, sizey, frameStride,
+                    ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil,
+                    NeuronXY, NeuronN,0.25,0.65)
+                    
+    return NeuronN, NeuronXY
+    
+''''
+EVERYTHING BELOW HERE WILL BE COMMENTED OUT
+'''
+    
+    
+    
+    
+    
     
 def neuronConversionFromFlattenedFrames(NeuronN, Neuron_fl, xyOrdering='xy'):
     if xyOrdering=="xy":
@@ -220,45 +295,6 @@ def stabilizeZ(NeuronXYZ, NeuronCurvatureVSplit, method=""):
         
     
 #def neuronConversionTuple(NeuronN, NeuronXY):
-    
-
-def findNeuronsFramesSequence(framesIn, maxNeuronN=100000):
-    '''sh = framesIn.shape
-    if len(sh) == 2:
-        framesN = 1
-        framesStride = 1
-        sizex = sh[-2]
-        sizey = sh[-1]//2
-    if len(sh) == 3:
-        framesN = sh[0]
-        framesStride = 1
-        sizex = sh[-2]
-        sizey = sh[-1]//2
-    if len(sh) == 4:
-        framesN = sh[0]
-        framesStride = sh[1]
-        sizex = sh[-2]
-        sizey = sh[-1]//framesStride
-    print(sh)'''
-    framesN=framesIn.shape[0]
-    framesStride=2
-    sizex=512
-    sizey=512
-    
-    framesN = (np.uint32)(framesN)
-    sizex = (np.uint32)(sizex)
-    sizey = (np.uint32)(sizey)
-    frameStride = (np.uint32)(framesStride)
-    
-    ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN = \
-            pyns.initVariables(framesN,sizex,sizey,maxNeuronN)
-    
-    pyns.find_neurons_frames_sequence(
-                    framesN, framesIn, sizex, sizey, frameStride,
-                    ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil,
-                    NeuronXY, NeuronN,0.25,0.65)
-                    
-    return NeuronN, NeuronXY
 
 def initVariables(framesN,sizex,sizey,maxNeuronN=100000):
     sizex2 = sizex // 2
