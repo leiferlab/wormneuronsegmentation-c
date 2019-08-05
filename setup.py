@@ -21,14 +21,13 @@ elif os.name == 'nt':
 
 extra_objects = ['{}lib{}'.format(lib_dir, l) for l in libraries]
 if os.name == 'nt': extra_objects = ['{}{}'.format(lib_dir, l) for l in libraries]
-print(extra_objects)
+
 if francesco: 
     includes = [include_dir+"opencv2"]
 elif tigressdata: 
     includes = [include_dir]
 elif os.name == 'nt':
     includes = [include_dir]
-
 
 
 includes.append(numpy.get_include())
@@ -41,6 +40,8 @@ pyneuronsegmentation_c = Extension('pyneuronsegmentation._pyneuronsegmentation_c
 
 setup (name = 'pyneuronsegmentation',
        version = '1.0',
+       author='Francesco Randi @ Leiferlab, Princeton Physics',
+       author_email='francesco.randi@gmail.com',
        description = 'neuronsegmentation',
        py_modules = ['pyneuronsegmentation._pyneuronsegmentation_py'],
        ext_modules = [pyneuronsegmentation_c])

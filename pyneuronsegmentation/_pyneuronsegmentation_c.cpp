@@ -1,3 +1,11 @@
+/**
+    wormneuronsegmentation
+    _pyneuronsegmentation_c.cpp
+    Finds nuclei of neurons in stack of fluorescence images.
+
+    @author Francesco Randi
+**/
+
 //#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <Python.h>
 #include <numpy/arrayobject.h>
@@ -209,19 +217,23 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
     double blur;
     uint32_t checkPlanesN;
     uint32_t xydiameter;
+    uint32_t extractCurvatureBoxSize;
     
     PyObject *ArrA_o, *ArrBB_o, *ArrBX_o, *ArrBY_o, *ArrBth_o, *ArrBdil_o;
     PyObject *NeuronXYCandidatesVolume_o, *NeuronNCandidatesVolume_o;
     PyObject *NeuronXYAll_o, *NeuronNAll_o;
+    PyObject *NeuronCurvatureAll_o;
     
     
-    if(!PyArg_ParseTuple(args, "iOiiiiOOOOOOOOOOOfdii", 
+    if(!PyArg_ParseTuple(args, "iOiiiiOOOOOOOOOOOOfdiii", 
             &framesN, &framesIn_o, &sizex, &sizey, &framesStride,
             &volumeN, &volumeFirstFrame_o,
             &ArrA_o, &ArrBB_o, &ArrBX_o, &ArrBY_o, &ArrBth_o, &ArrBdil_o,
             &NeuronXYCandidatesVolume_o, &NeuronNCandidatesVolume_o,
             &NeuronXYAll_o, &NeuronNAll_o,
-            &threshold, &blur, &checkPlanesN, &xydiameter)) return NULL;
+            &NeuronCurvatureAll_o,
+            &threshold, &blur, &checkPlanesN, &xydiameter,
+            &extractCurvatureBoxSize)) return NULL;
     
     PyObject *framesIn_a = PyArray_FROM_OTF(framesIn_o, NPY_UINT16, NPY_IN_ARRAY);
     PyObject *volumeFirstFrame_a = PyArray_FROM_OTF(volumeFirstFrame_o, NPY_UINT32, NPY_IN_ARRAY);
@@ -235,6 +247,7 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
     PyObject *NeuronNCandidatesVolume_a = PyArray_FROM_OTF(NeuronNCandidatesVolume_o, NPY_UINT32, NPY_IN_ARRAY);
     PyObject *NeuronXYAll_a = PyArray_FROM_OTF(NeuronXYAll_o, NPY_UINT32, NPY_IN_ARRAY);
     PyObject *NeuronNAll_a = PyArray_FROM_OTF(NeuronNAll_o, NPY_UINT32, NPY_IN_ARRAY);
+    PyObject *NeuronCurvatureAll_a = PyArray_FROM_OTF(NeuronCurvatureAll_o, NPY_FLOAT32, NPY_IN_ARRAY);
     
     // Check that the above conversion worked, otherwise decrease the reference
     // count and return NULL.                                 
@@ -249,7 +262,8 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
         NeuronXYCandidatesVolume_a == NULL ||
         NeuronNCandidatesVolume_a == NULL ||
         NeuronXYAll_a == NULL ||
-        NeuronNAll_a == NULL
+        NeuronNAll_a == NULL ||
+        NeuronCurvatureAll_a == NULL
         ) {
         Py_XDECREF(framesIn_a);
         Py_XDECREF(volumeFirstFrame_a);
@@ -263,6 +277,7 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
         Py_XDECREF(NeuronNCandidatesVolume_a);
         Py_XDECREF(NeuronXYAll_a);
         Py_XDECREF(NeuronNAll_a);
+        Py_XDECREF(NeuronCurvatureAll_a);
         return NULL;
     }
     
@@ -279,6 +294,7 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
     uint32_t *NeuronNCandidatesVolume = (uint32_t*)PyArray_DATA(NeuronNCandidatesVolume_a);
     uint32_t *NeuronXYAll = (uint32_t*)PyArray_DATA(NeuronXYAll_a);
     uint32_t *NeuronNAll = (uint32_t*)PyArray_DATA(NeuronNAll_a);
+    float *NeuronCurvatureAll = (float*)PyArray_DATA(NeuronCurvatureAll_a);
     
     //////////////////////////////////
     //////////////////////////////////
@@ -293,7 +309,8 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
         NeuronXYCandidatesVolume, 
 	    NeuronNCandidatesVolume,
 	    NeuronXYAll, NeuronNAll,
-	    threshold, blur, checkPlanesN, xydiameter);
+	    NeuronCurvatureAll,
+	    threshold, blur, checkPlanesN, xydiameter, extractCurvatureBoxSize);
     
     //////////////////////////////////
     //////////////////////////////////
@@ -316,6 +333,7 @@ static PyObject *pyns_find_neurons(PyObject *self, PyObject *args) {
     Py_XDECREF(NeuronNCandidatesVolume_a);
     Py_XDECREF(NeuronXYAll_a);
     Py_XDECREF(NeuronNAll_a);
+    Py_XDECREF(NeuronCurvatureAll_a);
     
     // Return the python object none. Its reference count has to be increased.
     Py_INCREF(Py_None);

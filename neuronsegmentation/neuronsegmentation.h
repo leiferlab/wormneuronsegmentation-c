@@ -1,3 +1,12 @@
+/**
+    wormneuronsegmentation
+    neuronsegmentation.h
+    Finds nuclei of neurons in stack of fluorescence images.
+
+    @author Francesco Randi
+**/
+
+
 void segment_singleframe_pipeline(uint16_t ImgIn[], 
 	int32_t sizex, int32_t sizey, 
 	cv::Mat& C, int32_t sizeC, 
@@ -35,6 +44,13 @@ void segment_check2dcandidates_7planes_5maxdiameter(
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
 	uint32_t *NeuronXYout, uint32_t &NeuronNout);
 	
+void segment_extract_curvature(
+	float ArrB0[], float ArrB1[], float ArrB2[],
+	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
+    int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	float *NeuronCurvatureOut, uint32_t totalBoxSize=51);
+	
 void find_neurons_frames_sequence(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
     int32_t framesStride,
@@ -54,5 +70,6 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronXYCandidatesVolume[], 
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
+	float NeuronCurvatureAll[],
 	float threshold = 0.25, double blur = 0.65, uint32_t checkPlanesN = 5,
-	uint32_t xydiameter=3);
+	uint32_t xydiameter=3, uint32_t extractCurvatureBoxSize=51);
