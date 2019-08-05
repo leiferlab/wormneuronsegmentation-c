@@ -1,3 +1,11 @@
+/**
+    wormneuronsegmentation
+    neuronsegmentation.cpp
+    Finds nuclei of neurons in stack of fluorescence images.
+
+    @author Francesco Randi
+**/
+
 #include <stdint.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>

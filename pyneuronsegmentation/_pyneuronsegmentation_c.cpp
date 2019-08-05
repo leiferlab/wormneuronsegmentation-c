@@ -1,3 +1,11 @@
+/**
+    wormneuronsegmentation
+    _pyneuronsegmentation_c.cpp
+    Finds nuclei of neurons in stack of fluorescence images.
+
+    @author Francesco Randi
+**/
+
 //#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <Python.h>
 #include <numpy/arrayobject.h>

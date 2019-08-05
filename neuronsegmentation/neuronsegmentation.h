@@ -1,3 +1,12 @@
+/**
+    wormneuronsegmentation
+    neuronsegmentation.h
+    Finds nuclei of neurons in stack of fluorescence images.
+
+    @author Francesco Randi
+**/
+
+
 void segment_singleframe_pipeline(uint16_t ImgIn[], 
 	int32_t sizex, int32_t sizey, 
 	cv::Mat& C, int32_t sizeC, 
