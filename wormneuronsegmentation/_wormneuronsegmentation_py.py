@@ -92,24 +92,32 @@ def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
         
     return Neuron
     
-def findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
+def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None, 
+    rectype="3d",
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
     maxNeuronN=1000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
     
-    NeuronN, NeuronXY, NeuronCurvature, diagnostics = \
-        _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
-            threshold,blur,checkPlanesN,xydiameter,maxNeuronN,maxFramesInVolume,
-            extractCurvatureBoxSize)
-            
-    curvatureBoxProperties = get_curvatureBoxProperties()
-    curvatureboxIndices = curvatureBoxProperties['boxIndices']
-    curvatureboxNPlanes = curvatureBoxProperties['nPlane']
-    
-    NeuronProperties = {'curvature': NeuronCurvature, 
-                        'boxNPlane': curvatureboxNPlanes, 
-                        'boxIndices': curvatureboxIndices}
-    
-    NeuronYX = wormns.neuronConversion(NeuronN, NeuronXY,xyOrdering='yx')
+    if rectype=="3d":
+        NeuronN, NeuronXY, NeuronCurvature, diagnostics = \
+            _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
+                threshold,blur,checkPlanesN,xydiameter,maxNeuronN,
+                maxFramesInVolume, extractCurvatureBoxSize)
+                
+        curvatureBoxProperties = get_curvatureBoxProperties()
+        curvatureboxIndices = curvatureBoxProperties['boxIndices']
+        curvatureboxNPlanes = curvatureBoxProperties['nPlane']
+        
+        NeuronProperties = {'curvature': NeuronCurvature, 
+                            'boxNPlane': curvatureboxNPlanes, 
+                            'boxIndices': curvatureboxIndices}
+                            
+    elif rectype=="2d":
+        NeuronN, NeuronXY = wormns.findNeuronsFramesSequence(framesIn,
+                            threshold=threshold,blur=blur,
+                            maxNeuronN=maxNeuronN)
+        NeuronProperties = {}
+        
+    NeuronYX = wormns.neuronConversion(NeuronN, NeuronXY, xyOrdering='yx')
     
     return NeuronYX, NeuronProperties
     
@@ -132,7 +140,8 @@ def initVariables(framesN,sizex,sizey,maxNeuronN=100000):
     return ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN
 
 
-def findNeuronsFramesSequence(framesIn, maxNeuronN=100000):
+def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65, 
+                                maxNeuronN=100000):
     '''sh = framesIn.shape
     if len(sh) == 2:
         framesN = 1
@@ -159,6 +168,8 @@ def findNeuronsFramesSequence(framesIn, maxNeuronN=100000):
     sizex = (np.uint32)(sizex)
     sizey = (np.uint32)(sizey)
     frameStride = (np.uint32)(framesStride)
+    threshold = (np.float32)(threshold)
+    blur = (np.float64)(blur)
     
     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN = \
             wormns.initVariables(framesN,sizex,sizey,maxNeuronN)
@@ -166,6 +177,6 @@ def findNeuronsFramesSequence(framesIn, maxNeuronN=100000):
     wormns.find_neurons_frames_sequence(
                     framesN, framesIn, sizex, sizey, frameStride,
                     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil,
-                    NeuronXY, NeuronN,0.25,0.65)
+                    NeuronXY, NeuronN,threshold,blur)
                     
     return NeuronN, NeuronXY
