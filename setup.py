@@ -12,8 +12,8 @@ if francesco:
     lib_dir = '/usr/local/lib/'
     include_dir = '/usr/local/include/'
 elif tigressdata:
-    lib_dir = '/home/frandi/.local/lib64/'
-    include_dir = '/home/frandi/.local/include/'
+    lib_dir = "/projects/LEIFER/lib/lib/" #'/home/frandi/.local/lib64/'
+    include_dir = "/projects/LEIFER/lib/include/"#'/home/frandi/.local/include/'
 elif os.name == 'nt':
     lib_dir = 'C:\\Users\\francesco\\dev\\opencv\\build\\x64\\vc14\\lib\\'
     include_dir = 'C:\\Users\\francesco\\dev\\opencv\\build\\include\\'
