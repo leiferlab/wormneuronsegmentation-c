@@ -10,6 +10,55 @@ def get_curvatureBoxProperties():
 def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
     maxNeuronN=1000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
+    '''
+    Finds neurons in a sequence of 3D images.
+    
+    Parameters
+    ----------
+    framesIn: numpy array
+        framesIn[i,ch,y,x] images. Note: Must be contiguous and row-major.
+    channelsN: integer
+        Number of channels present.
+    volumeN: integer
+        Number of volumes in which the sequence of images is to be split.
+    volumeFirstFrame: numpy array of integers
+        First frames of each volume. With M volumes, it must include also the
+        first frame of the M+1 volume as last element (or 1+last frame of last
+        volume).
+    threshold: float, optional
+        Threshold for noise removal. Default: 0.25
+    blur: float, optional
+        Gaussian blur. Default: 0.65
+    checkPlanesN: integer, optional
+        Number of planes determining the neighborhood along z in which to look 
+        for local maxima. Default: 5
+    xydiameter: integer, optional
+        Number of pixel determining the neighborhood in xy in which to look for
+        local maxima. Default: 3
+    maxNeuronN: integer, optional
+        Maximum number of neurons to expect. Used to preallocate the array in 
+        which the neuron coordinates are stored. Default: 1000000
+    maxFramesInVolume: integer, optional
+        Maximum number of frames to expect in each volume. Used to preallocate
+        arrays, as above. Default: 100
+    extractCurvatureBoxSize: integer, optional
+        Related to the size of the neighborhood of each neuron of which to store
+        the local curvature. Right now it is hard coded, so don't use this
+        parameter.
+        
+    Returns
+    -------
+    NeuronN: numpy array
+        NeuronN[i] Number of neurons found in frame i.
+    NeuronXY: numpy array
+        NeuronXY[j] 1-Dimensional representation of the x and y coordinates of
+        neuron j (j is counted absolutely)
+    NeuronCurvature: numpy array
+        Local curvature around neuron j. Extraction hard coded for the time 
+        being.
+    diagnostics: dictionary
+        Contains arrays for debugging.
+    '''
     
     framesN = (np.uint32)(framesIn.shape[0])
     if len(framesIn.shape)==3:
@@ -68,6 +117,29 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     return NeuronNAll, NeuronXYAll, NeuronCurvature, diagnostics
     
 def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
+    '''Converts the results of _findNeurons to a nicer structure.
+    
+    Parameters
+    ----------
+    NeuronN: numpy array
+        NeuronN[i] is the number of neurons in frame i.
+    NeuronXY: numpy array
+        NeuronXY[j] 1-Dimensional representation of the x and y coordinates of
+        neuron j (j is counted absolutely)
+    xyOredering: string, optional
+        Desired output ordering of the coordinates. xy for plotting order, yx
+        for indexing order. Default: xy
+    flattenFrames: boolean, optional
+        If True, the frames are flattened, returning the information on the 
+        neurons but forgetting about their belonging to frames.
+        
+    Returns
+    -------
+    Neuron: list of numpy array
+        Neuron[i][j] 2-Dimensional representation of the y and x coordinates 
+        of neuron j in frame i.
+    
+    '''
     framesN = NeuronN.shape[0]
     NeuronY = NeuronXY//256 
     NeuronX = (NeuronXY - NeuronY*256)
@@ -96,6 +168,54 @@ def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None,
     rectype="3d",
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
     maxNeuronN=1000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
+    '''
+    Finds neurons in a sequence of 3D images.
+    
+    Parameters
+    ----------
+    framesIn: numpy array
+        framesIn[i,ch,y,x] images. Note: Must be contiguous and row-major.
+    channelsN: integer, optional (needed for volumetric images)
+        Number of channels present.
+    volumeN: integer, optional (needed for volumetric images)
+        Number of volumes in which the sequence of images is to be split.
+    volumeFirstFrame: numpy array of integers, optional (needed for volumetric images)
+        First frames of each volume. With M volumes, it must include also the
+        first frame of the M+1 volume as last element (or 1+last frame of last
+        volume).
+    recType: string, optional
+        3d or 2d, for volumetric or in-plane recordings. Default: 3d
+    threshold: float, optional
+        Threshold for noise removal. Default: 0.25
+    blur: float, optional
+        Gaussian blur. Default: 0.65
+    checkPlanesN: integer, optional
+        Number of planes determining the neighborhood along z in which to look 
+        for local maxima. Default: 5
+    xydiameter: integer, optional
+        Number of pixel determining the neighborhood in xy in which to look for
+        local maxima. Default: 3
+    maxNeuronN: integer, optional
+        Maximum number of neurons to expect. Used to preallocate the array in 
+        which the neuron coordinates are stored. Default: 1000000
+    maxFramesInVolume: integer, optional
+        Maximum number of frames to expect in each volume. Used to preallocate
+        arrays, as above. Default: 100
+    extractCurvatureBoxSize: integer, optional
+        Related to the size of the neighborhood of each neuron of which to store
+        the local curvature. Right now it is hard coded, so don't use this
+        parameter.
+        
+    Returns
+    -------
+    NeuronYX: list of numpy array
+        NeuronYX[i][j] 2-Dimensional representation of the y and x coordinates 
+        of neuron j in frame i.
+    NeuronProperites: dictionary
+        Contains data about the local curvature around each neuron. Only
+        implemented for volumetric recording. Note: The curvature has its sign
+        flipped.
+    '''
     
     if rectype=="3d":
         NeuronN, NeuronXY, NeuronCurvature, diagnostics = \
@@ -122,7 +242,7 @@ def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None,
     return NeuronYX, NeuronProperties
     
     
-def initVariables(framesN,sizex,sizey,maxNeuronN=100000):
+def _initVariables(framesN,sizex,sizey,maxNeuronN=100000):
     sizex2 = sizex // 2
     sizey2 = sizey // 2
     sizexy2 = sizex2*sizey2    
@@ -142,27 +262,26 @@ def initVariables(framesN,sizex,sizey,maxNeuronN=100000):
 
 def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65, 
                                 maxNeuronN=100000):
-    '''sh = framesIn.shape
-    if len(sh) == 2:
-        framesN = 1
-        framesStride = 1
-        sizex = sh[-2]
-        sizey = sh[-1]//2
-    if len(sh) == 3:
-        framesN = sh[0]
-        framesStride = 1
-        sizex = sh[-2]
-        sizey = sh[-1]//2
-    if len(sh) == 4:
-        framesN = sh[0]
-        framesStride = sh[1]
-        sizex = sh[-2]
-        sizey = sh[-1]//framesStride
-    print(sh)'''
-    framesN=framesIn.shape[0]
-    framesStride=2
-    sizex=512
-    sizey=512
+    '''
+    Finds neurons in a sequence of 2D images (no comparisons across frames done)
+    
+    Parameters
+    ----------
+    framesIn: numpy array
+        framesIn[i,y,x] images. Note: Must be contiguous and row-major.
+    threshold: float
+        Threshold for noise removal.
+    blur: float
+        Gaussian blur.
+    '''
+    sh = framesIn.shape
+    framesN=sh[0]
+    framesStride=sh[1]
+    framesSizex=sh[2]
+    framesSizey=sh[3]
+    #framesStride=2
+    #sizex=512
+    #sizey=512
     
     framesN = (np.uint32)(framesN)
     sizex = (np.uint32)(sizex)
@@ -172,7 +291,7 @@ def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65,
     blur = (np.float64)(blur)
     
     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN = \
-            wormns.initVariables(framesN,sizex,sizey,maxNeuronN)
+            wormns._initVariables(framesN,sizex,sizey,maxNeuronN)
     
     wormns.find_neurons_frames_sequence(
                     framesN, framesIn, sizex, sizey, frameStride,
