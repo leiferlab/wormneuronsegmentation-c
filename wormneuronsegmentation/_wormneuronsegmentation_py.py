@@ -242,7 +242,7 @@ def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None,
     return NeuronYX, NeuronProperties
     
     
-def _initVariables(framesN,sizex,sizey,maxNeuronN=100000):
+def initVariables(framesN,sizex,sizey,maxNeuronN=100000):
     sizex2 = sizex // 2
     sizey2 = sizey // 2
     sizexy2 = sizex2*sizey2    
@@ -277,8 +277,8 @@ def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65,
     sh = framesIn.shape
     framesN=sh[0]
     framesStride=sh[1]
-    framesSizex=sh[2]
-    framesSizey=sh[3]
+    sizex=sh[2]
+    sizey=sh[3]
     #framesStride=2
     #sizex=512
     #sizey=512
@@ -291,7 +291,7 @@ def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65,
     blur = (np.float64)(blur)
     
     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN = \
-            wormns._initVariables(framesN,sizex,sizey,maxNeuronN)
+            wormns.initVariables(framesN,sizex,sizey,maxNeuronN)
     
     wormns.find_neurons_frames_sequence(
                     framesN, framesIn, sizex, sizey, frameStride,
