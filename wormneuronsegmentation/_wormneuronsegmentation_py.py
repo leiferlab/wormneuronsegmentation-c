@@ -9,7 +9,8 @@ def get_curvatureBoxProperties():
 
 def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
-    maxNeuronN=1000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
+    maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51,
+    returnAll=False):
     '''
     Finds neurons in a sequence of 3D images.
     
@@ -78,7 +79,7 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     volumeFirstFrame = np.array(volumeFirstFrame).astype(np.uint32)
     
     ArrA    = np.zeros(sizexy2, dtype=np.uint16)
-    ArrBB    = np.zeros(sizexy2*maxFramesInVolume, dtype=np.float32)
+    ArrBB   = np.zeros(sizexy2*maxFramesInVolume, dtype=np.float32)
     ArrBX   = np.zeros(sizexy2, dtype=np.float32)
     ArrBY   = np.zeros(sizexy2, dtype=np.float32)
     ArrBth  = np.zeros(sizexy2, dtype=np.float32)
@@ -102,9 +103,9 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
                     (np.uint32)(extractCurvatureBoxSize))
     
     diagnostics = {"ArrA": ArrA, "ArrBB": ArrBB, "ArrBX": ArrBX, "ArrBY": ArrBY,
-            "ArrBth": ArrBth, "ArrBdil": ArrBdil,
-            "NeuronXYCandidatesVolume": NeuronXYCandidatesVolume,
-            "NeuronNCandidatesVolume": NeuronNCandidatesVolume}
+                "ArrBth": ArrBth, "ArrBdil": ArrBdil,
+                "NeuronXYCandidatesVolume": NeuronXYCandidatesVolume,
+                "NeuronNCandidatesVolume": NeuronNCandidatesVolume}
     
     NeuronNAll = NeuronNAll[0:framesN]
     NeuronTot = np.sum(NeuronNAll)
@@ -113,7 +114,7 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     
     np.clip(NeuronCurvature,0,None,NeuronCurvature)
     NeuronCurvature = NeuronCurvature.reshape((NeuronTot,extractCurvatureBoxSize))
-                    
+    
     return NeuronNAll, NeuronXYAll, NeuronCurvature, diagnostics
     
 def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
@@ -167,7 +168,7 @@ def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
 def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None, 
     rectype="3d",
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
-    maxNeuronN=1000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
+    maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
     '''
     Finds neurons in a sequence of 3D images.
     
@@ -232,17 +233,23 @@ def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None,
                             'boxIndices': curvatureboxIndices}
                             
     elif rectype=="2d":
-        NeuronN, NeuronXY = wormns.findNeuronsFramesSequence(framesIn,
+        extractCurvatureBoxSize=13
+        NeuronN, NeuronXY, NeuronCurvature = wormns.findNeuronsFramesSequence(
+                            framesIn,
                             threshold=threshold,blur=blur,
-                            maxNeuronN=maxNeuronN)
-        NeuronProperties = {}
+                            maxNeuronN=maxNeuronN,
+                            extractCurvatureBoxSize=extractCurvatureBoxSize)
+        NeuronProperties = {'curvature': NeuronCurvature,
+                            'boxNPlane': 1,
+                            'boxIndices': [np.arange(13)],
+                            }
         
     NeuronYX = wormns.neuronConversion(NeuronN, NeuronXY, xyOrdering='yx')
     
     return NeuronYX, NeuronProperties
     
     
-def initVariables(framesN,sizex,sizey,maxNeuronN=100000):
+def initVariables(framesN,sizex,sizey,maxNeuronN=100000,extractCurvatureBoxSize=13):
     sizex2 = sizex // 2
     sizey2 = sizey // 2
     sizexy2 = sizex2*sizey2    
@@ -252,16 +259,18 @@ def initVariables(framesN,sizex,sizey,maxNeuronN=100000):
     ArrBX   = np.zeros(sizexy2, dtype=np.float32)
     ArrBY   = np.zeros(sizexy2, dtype=np.float32)
     ArrBth  = np.zeros(sizexy2, dtype=np.float32)
-    ArrBdil = np.zeros(sizexy2, dtype=np.float32) 
+    ArrBdil = np.zeros(sizexy2, dtype=np.float32)
 
     NeuronXY = np.zeros(maxNeuronN, dtype=np.uint32)
     NeuronN  = np.zeros(framesN, dtype=np.uint32)
+    NeuronCurvature = np.zeros(maxNeuronN*extractCurvatureBoxSize, dtype=np.float32)
     
-    return ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN
+    return ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN, \
+            NeuronCurvature
 
 
 def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65, 
-                                maxNeuronN=100000):
+                                maxNeuronN=100000, extractCurvatureBoxSize=13):
     '''
     Finds neurons in a sequence of 2D images (no comparisons across frames done)
     
@@ -289,13 +298,21 @@ def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65,
     frameStride = (np.uint32)(framesStride)
     threshold = (np.float32)(threshold)
     blur = (np.float64)(blur)
+    extractCurvatureBoxSize = (np.uint32)(extractCurvatureBoxSize)
     
-    ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN = \
-            wormns.initVariables(framesN,sizex,sizey,maxNeuronN)
+    ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, NeuronXY, NeuronN, \
+            NeuronCurvature = \
+            wormns.initVariables(framesN,sizex,sizey,maxNeuronN,
+                                    extractCurvatureBoxSize)
     
     wormns.find_neurons_frames_sequence(
                     framesN, framesIn, sizex, sizey, frameStride,
                     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil,
-                    NeuronXY, NeuronN,threshold,blur)
+                    NeuronXY, NeuronN, NeuronCurvature, 
+                    threshold, blur, extractCurvatureBoxSize)
+    
+    NeuronTot = np.sum(NeuronN)
+    NeuronCurvature = NeuronCurvature[0:NeuronTot*extractCurvatureBoxSize]
+    NeuronCurvature = NeuronCurvature.reshape((NeuronTot,extractCurvatureBoxSize))
                     
-    return NeuronN, NeuronXY
+    return NeuronN, NeuronXY, NeuronCurvature

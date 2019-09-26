@@ -19,7 +19,9 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
     float ArrB[], float ArrBX[], float ArrBY[], 
 	float ArrBth[], float ArrBdil[],
 	uint32_t NeuronXY[], uint32_t NeuronN[],
-	float threshold, double blur
+	float NeuronCurvature[],
+	float threshold, double blur,
+	uint32_t extractCurvatureBoxSize
 	) {
 	
     // Size of the arrays / images. sizex2 and sizey2 are the sizes of the 
@@ -36,6 +38,9 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
     
     // Pointer to ImgIn inside framesIn[]
     uint16_t * ImgIn;
+    
+    //Pointer to specific positions in the NeuronCurvatureAll array.
+	float *NeuronCurvaturePt = NeuronCurvature;
        
     // Create the cv::Mat header for all the images.
     cv::Mat A = cv::Mat(sizex2, sizey2, CV_16U, ArrA);
@@ -77,6 +82,10 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
             NeuronXY, NeuronN[nu],
             maxX, maxY, maxXInStack, maxYInStack, threshold, blur, true);
         
+        segment_extract_curvature_single_frame(ArrB,sizex2,sizey2,
+                    NeuronXY, NeuronN[nu],
+	                NeuronCurvaturePt, extractCurvatureBoxSize);
+        
         if(framesN>0){
             /**
             Move the pointer to the next frames in framesIn/ImgIn.
@@ -91,6 +100,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
             NeuronNCandidates to the next element of NeuronNCandidatesVolume.
             **/
             NeuronXY = NeuronXY + NeuronN[nu];
+            NeuronCurvaturePt = NeuronCurvaturePt + NeuronN[nu]*extractCurvatureBoxSize;
             
             // Update encountered maxima.
             maxXInStack = 0.7*((maxXInStack<maxX)?maxX:maxXInStack);
@@ -1004,6 +1014,73 @@ void segment_extract_curvature(
 		*(NeuronCurvatureOut+k+49) = ArrB5[index + sizeBx];
 		
 		*(NeuronCurvatureOut+k+50) = ArrB6[index];
+		
+		k += totalBoxSize;
+	}
+	}
+}
+
+
+void segment_extract_curvature_single_frame(
+	float ArrB[],
+    int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	float *NeuronCurvatureOut, uint32_t totalBoxSize) {
+
+    /**
+    Parameters
+    ----------
+    ArrB0, ArrB1, ArrB2, ArrB3, ArrB4, ArrB5, ArrB6 : float arrays
+        Arrays containing the curvature in the current plane and the
+        neighboring ones.
+    sizeBx, sizeBy : int32_t
+        Sizes of the single images.
+    NeuronXYin : uint32_t array
+        Array containing the linearized indexes of the (confirmed) neurons. The
+        indexes are relative to the frame in which the neuron has been found.
+    NeuronNin : uint32_t
+        Number of neurons in the current frame (the one corresponding to the
+        curvature B3).
+    NeuronCurvatureOut : pointer to float
+        Pointing to the array storing the curvatures, at the first free
+        position. After calling this function, this pointer has to be moved by
+        NeuronNIn*totalBoxSize, so that the next time it is passed to this
+        function, it will point to the first free positions.
+    
+    Returns
+    -------
+    void.
+    
+    Notes
+    -----
+    Given the already *confirmed* neurons (not all the candidates), save the
+    curvatures of the neighboring points. For the time being, hard code a box.
+    This works like a kind of watershed, giving you as a result the extension 
+    of the neuron. 
+    
+    Currently using the "7x5" box of the check 7 planes 5 max diameter.
+	**/
+	
+	int32_t k = 0;
+	uint32_t index;
+    
+    if(totalBoxSize==13){
+	for (uint i = 0; i < NeuronNin; i++) {
+	    index = NeuronXYin[i];
+		
+		*(NeuronCurvatureOut+k+0) = ArrB[index - 2*sizeBx];
+		*(NeuronCurvatureOut+k+1) = ArrB[index - sizeBx-1];
+		*(NeuronCurvatureOut+k+2) = ArrB[index - sizeBx];
+		*(NeuronCurvatureOut+k+3) = ArrB[index - sizeBx+1];
+		*(NeuronCurvatureOut+k+4) = ArrB[index - 2];
+		*(NeuronCurvatureOut+k+5) = ArrB[index - 1];
+		*(NeuronCurvatureOut+k+6) = ArrB[index];
+		*(NeuronCurvatureOut+k+7) = ArrB[index + 1];
+		*(NeuronCurvatureOut+k+8) = ArrB[index + 2];
+		*(NeuronCurvatureOut+k+9) = ArrB[index + sizeBx-1];
+		*(NeuronCurvatureOut+k+10) = ArrB[index + sizeBx];
+		*(NeuronCurvatureOut+k+11) = ArrB[index + sizeBx+1];
+		*(NeuronCurvatureOut+k+12) = ArrB[index + 2*sizeBx];
 		
 		k += totalBoxSize;
 	}

@@ -50,6 +50,12 @@ void segment_extract_curvature(
     int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
 	float *NeuronCurvatureOut, uint32_t totalBoxSize=51);
+
+void segment_extract_curvature_single_frame(
+	float ArrB[],
+    int32_t sizeBx, int32_t sizeBy, 
+	uint32_t NeuronXYin[], uint32_t NeuronNin,
+	float *NeuronCurvatureOut, uint32_t totalBoxSize=13);
 	
 void find_neurons_frames_sequence(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
@@ -58,7 +64,9 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
     float ArrB[], float ArrBX[], float ArrBY[], 
 	float ArrBth[], float ArrBdil[],
 	uint32_t NeuronXY[], uint32_t NeuronN[],
-	float threshold = 0.25, double blur = 0.65);
+	float NeuronCurvature[],
+	float threshold = 0.25, double blur = 0.65,
+	uint32_t extractCurvatureBoxSize=13);
 	
 void find_neurons(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,

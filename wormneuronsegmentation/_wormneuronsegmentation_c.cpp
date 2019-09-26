@@ -109,17 +109,18 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
     
     int sizex, sizey;
     int32_t framesStride;
+    uint32_t extractCurvatureBoxSize;
     float threshold;
     double blur;
     
     PyObject *ArrA_o, *ArrB_o, *ArrBX_o, *ArrBY_o, *ArrBth_o, *ArrBdil_o;
-    PyObject *NeuronXY_o, *NeuronN_o;
+    PyObject *NeuronXY_o, *NeuronN_o,*NeuronCurvature_o;
     
-    if(!PyArg_ParseTuple(args, "iOiiiOOOOOOOOfd", 
+    if(!PyArg_ParseTuple(args, "iOiiiOOOOOOOOOfdi", 
             &framesN, &framesIn_o, &sizex, &sizey, &framesStride,
             &ArrA_o, &ArrB_o, &ArrBX_o, &ArrBY_o, &ArrBth_o, &ArrBdil_o,
-            &NeuronXY_o, &NeuronN_o,
-            &threshold, &blur)) return NULL;
+            &NeuronXY_o, &NeuronN_o, &NeuronCurvature_o,
+            &threshold, &blur, &extractCurvatureBoxSize)) return NULL;
     
     PyObject *framesIn_a = PyArray_FROM_OTF(framesIn_o, NPY_UINT16, NPY_IN_ARRAY);
     PyObject *ArrA_a = PyArray_FROM_OTF(ArrA_o, NPY_UINT16, NPY_IN_ARRAY);
@@ -130,6 +131,7 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
     PyObject *ArrBdil_a = PyArray_FROM_OTF(ArrBdil_o, NPY_FLOAT32, NPY_IN_ARRAY);
     PyObject *NeuronXY_a = PyArray_FROM_OTF(NeuronXY_o, NPY_UINT32, NPY_IN_ARRAY);
     PyObject *NeuronN_a = PyArray_FROM_OTF(NeuronN_o, NPY_UINT32, NPY_IN_ARRAY);
+    PyObject *NeuronCurvature_a = PyArray_FROM_OTF(NeuronCurvature_o, NPY_FLOAT32, NPY_IN_ARRAY);
     
     // Check that the above conversion worked, otherwise decrease the reference
     // count and return NULL.                                 
@@ -141,7 +143,8 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
         ArrBth_a == NULL ||
         ArrBdil_a == NULL ||
         NeuronXY_a == NULL ||
-        NeuronN_a == NULL
+        NeuronN_a == NULL ||
+        NeuronCurvature_a == NULL
         ) {
         Py_XDECREF(framesIn_a);
         Py_XDECREF(ArrA_a);
@@ -152,6 +155,7 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
         Py_XDECREF(ArrBdil_a);
         Py_XDECREF(NeuronXY_a);
         Py_XDECREF(NeuronN_a);
+        Py_XDECREF(NeuronCurvature_a);
         return NULL;
     }
     
@@ -165,6 +169,7 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
     float *ArrBdil = (float*)PyArray_DATA(ArrBdil_a);
     uint32_t *NeuronXY = (uint32_t*)PyArray_DATA(NeuronXY_a);
     uint32_t *NeuronN = (uint32_t*)PyArray_DATA(NeuronN_a);
+    float *NeuronCurvature = (float*)PyArray_DATA(NeuronCurvature_a);
     
     //////////////////////////////////
     //////////////////////////////////
@@ -175,8 +180,8 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
     find_neurons_frames_sequence(framesIn, framesN, sizex, sizey,
         framesStride, // 1 or 2 (RFP RFP RFP or RFP GFP RFP GFP)
         ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, 
-	    NeuronXY, NeuronN,
-	    threshold, blur);
+	    NeuronXY, NeuronN, NeuronCurvature,
+	    threshold, blur, extractCurvatureBoxSize);
     
     //////////////////////////////////
     //////////////////////////////////
@@ -196,6 +201,7 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
     Py_XDECREF(ArrBdil_a);
     Py_XDECREF(NeuronXY_a);
     Py_XDECREF(NeuronN_a);
+    Py_XDECREF(NeuronCurvature_a);
     
     // Return the python object none. Its reference count has to be increased.
     Py_INCREF(Py_None);
