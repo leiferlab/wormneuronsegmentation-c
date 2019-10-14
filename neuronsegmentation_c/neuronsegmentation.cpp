@@ -188,7 +188,7 @@ void find_neurons(uint16_t framesIn[],
 	
 	cv::Mat B;
        
-    double maxX, maxY, maxXInStack, maxYInStack;
+    double maxX, maxY, maxXInStack, maxYInStack, maxXInStack0, maxYInStack0;
     //float threshold = 0.25;
     
     maxXInStack = -1.0;
@@ -234,6 +234,9 @@ void find_neurons(uint16_t framesIn[],
         maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
     }
     
+    maxXInStack0 = maxXInStack;
+    maxYInStack0 = maxYInStack;
+    
     // Bring pointer to frames to the beginning for the actual scan
     ImgIn = framesIn;
    
@@ -249,6 +252,9 @@ void find_neurons(uint16_t framesIn[],
         // Same as above
         NeuronXYCandidates = NeuronXYCandidatesVolume;
         //NeuronXYCandidates = NeuronXYAll;
+        
+        maxXInStack = maxXInStack0;
+        maxYInStack = maxYInStack0;
         
         int framesInVolume = volumeFirstFrame[mu+1] - volumeFirstFrame[mu];
         
@@ -284,6 +290,9 @@ void find_neurons(uint16_t framesIn[],
             //NeuronNAll[nu] = NeuronNCandidatesVolume[nu];
             
             // Update encountered maxima.
+            //if(maxX<maxXInStack*5){maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;}
+            //if(maxY<maxYInStack*5){maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;}
+            //std::cout<<maxXInStack<<" "<<maxYInStack<<"\n";
             maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
             maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
 

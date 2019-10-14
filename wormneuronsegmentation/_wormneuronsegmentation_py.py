@@ -87,8 +87,8 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     
     NeuronXYCandidatesVolume = np.zeros(maxNeuronN, dtype=np.uint32)
     NeuronNCandidatesVolume = np.zeros(maxFramesInVolume, dtype=np.uint32)
-    NeuronXYAll = np.zeros(maxNeuronN, dtype=np.uint32)
-    NeuronNAll  = np.zeros(framesN, dtype=np.uint32)
+    NeuronXYAll = np.zeros(maxNeuronN, dtype=np.uint32)+1
+    NeuronNAll  = np.zeros(framesN, dtype=np.uint32)+1
     NeuronCurvatureAll = np.zeros(maxNeuronN*extractCurvatureBoxSize, 
                                   dtype=np.float32)
     
