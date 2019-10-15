@@ -242,9 +242,6 @@ void find_neurons(uint16_t framesIn[],
    
     // For each volume mu
     for(uint mu=0; mu<volumeN; mu++) {
-        //maxXInStack = -1.0;
-        //maxYInStack = -1.0;
-        
         // Point to the first allocated B frame in ArrBB. The pointer ArrB will
         // be moved as the analysis proceeds through the volume.
         ArrB = ArrBB;
@@ -252,9 +249,6 @@ void find_neurons(uint16_t framesIn[],
         // Same as above
         NeuronXYCandidates = NeuronXYCandidatesVolume;
         //NeuronXYCandidates = NeuronXYAll;
-        
-        maxXInStack = maxXInStack0;
-        maxYInStack = maxYInStack0;
         
         int framesInVolume = volumeFirstFrame[mu+1] - volumeFirstFrame[mu];
         
@@ -270,7 +264,7 @@ void find_neurons(uint16_t framesIn[],
             segment_singleframe_pipeline(ImgIn, sizex, sizey, 
                 C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
                 NeuronXYCandidates, NeuronNCandidatesVolume[nu],
-                maxX, maxY, maxXInStack, maxYInStack, threshold, blur, true);
+                maxX, maxY, maxXInStack0, maxYInStack0, threshold, blur, true);
             /**
             Move the pointers to the next frames in framesIn/ImgIn and 
             ArrBB/ArrB. While ArrB is resent to point to the beginning of ArrBB
@@ -290,14 +284,21 @@ void find_neurons(uint16_t framesIn[],
             //NeuronNAll[nu] = NeuronNCandidatesVolume[nu];
             
             // Update encountered maxima.
-            //if(maxX<maxXInStack*5){maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;}
-            //if(maxY<maxYInStack*5){maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;}
+            if(maxX<maxXInStack*5.){maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;}
+            if(maxY<maxYInStack*5.){maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;}
             //std::cout<<maxXInStack<<" "<<maxYInStack<<"\n";
-            maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
-            maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
+            //maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
+            //maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
 
         }
-    
+        
+        // FIXME Well, this is practically hard-coding the tagRFP bleaching, so it has to be fixed..
+        // Any other thing (like using the the max_InStack from the previous volume
+        // produces a bleaching effect... I cannot understand why. And also I don't recall seeing this
+        // in my recordings (on the new instrument).
+        maxXInStack0 = maxXInStack0*0.9995;
+        maxYInStack0 = maxYInStack0*0.9995;
+        
         /**
         After the candidate neurons are found, select them using all the B 
         stored in ArrBB. 
@@ -662,8 +663,8 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// Hessian, so that you don't get too large threshold because of very
 		// shar
 		// 100 us
-		cv::minMaxIdx(BX, &minX, &maxX);
-		cv::minMaxIdx(BY, &minY, &maxY);
+		cv::minMaxIdx(BX, &minX, &maxX, NULL, NULL);
+		cv::minMaxIdx(BY, &minY, &maxY, NULL, NULL);
 		if ( (maxXInStack == -1.0 && maxYInStack == -1.0) || 
 		     (maxXInStack < maxX || maxYInStack < maxY) ) {
 			threshX = threshold * maxX;
