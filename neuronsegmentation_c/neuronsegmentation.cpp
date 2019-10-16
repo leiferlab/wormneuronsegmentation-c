@@ -72,10 +72,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
     maxYInStack = maxY;
         
     // Segment each frame independently and find the neurons.
-    for(uint nu=0; nu<framesN; nu++) {
-            //maxXInStack = -1.0;
-            //maxYInStack = -1.0;
-              
+    for(uint nu=0; nu<framesN; nu++) {             
         // Run the single frame segmentation.
         segment_singleframe_pipeline(ImgIn, sizex, sizey, 
             C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
@@ -103,8 +100,8 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
             NeuronCurvaturePt = NeuronCurvaturePt + NeuronN[nu]*extractCurvatureBoxSize;
             
             // Update encountered maxima.
-            maxXInStack = 0.7*((maxXInStack<maxX)?maxX:maxXInStack);
-            maxYInStack = 0.7*((maxYInStack<maxY)?maxY:maxYInStack);
+            maxXInStack = maxX;
+            maxYInStack = maxY;
         }
     }
 }
@@ -188,11 +185,8 @@ void find_neurons(uint16_t framesIn[],
 	
 	cv::Mat B;
        
-    double maxX, maxY, maxXInStack, maxYInStack, maxXInStack0, maxYInStack0;
+    double maxX, maxY, maxXInStack, maxYInStack, maxXInStackOld, maxYInStackOld;
     //float threshold = 0.25;
-    
-    maxXInStack = -1.0;
-    maxYInStack = -1.0;
     
     // Index for the frames with respect to the beginning
     int i = 0;
@@ -204,7 +198,6 @@ void find_neurons(uint16_t framesIn[],
     
     // Same as above
     NeuronXYCandidates = NeuronXYCandidatesVolume;
-    
     
     // Initialize max_InStack with the first volume
     maxXInStack = -1.0;
@@ -234,8 +227,8 @@ void find_neurons(uint16_t framesIn[],
         maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
     }
     
-    maxXInStack0 = maxXInStack;
-    maxYInStack0 = maxYInStack;
+    maxXInStackOld = maxXInStack;
+    maxYInStackOld = maxYInStack;
     
     // Bring pointer to frames to the beginning for the actual scan
     ImgIn = framesIn;
@@ -250,6 +243,13 @@ void find_neurons(uint16_t framesIn[],
         NeuronXYCandidates = NeuronXYCandidatesVolume;
         //NeuronXYCandidates = NeuronXYAll;
         
+        // For volume mu, the segmentation function takes the max_InStack from
+        // volume mu-1 (or the initialization above for mu=0), max_InStackOld,
+        // while it finds also the max_InStack of volume mu. To do the latter,
+        // reinitialize max_InStack at the beginning of every volume.
+        maxXInStack = -1.0;
+        maxYInStack = -1.0;
+        
         int framesInVolume = volumeFirstFrame[mu+1] - volumeFirstFrame[mu];
         
         // Segment each frame nu independently and find the candidate neurons.
@@ -261,10 +261,12 @@ void find_neurons(uint16_t framesIn[],
             
             // With the adjusted pointers and Mat headers, run the single frame
             // segmentation.
-            segment_singleframe_pipeline(ImgIn, sizex, sizey, 
+            segment_singleframe_pipeline(
+                ImgIn, sizex, sizey, 
                 C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
                 NeuronXYCandidates, NeuronNCandidatesVolume[nu],
-                maxX, maxY, maxXInStack0, maxYInStack0, threshold, blur, true);
+                maxX, maxY, maxXInStackOld, maxYInStackOld, 
+                threshold, blur, true);
             /**
             Move the pointers to the next frames in framesIn/ImgIn and 
             ArrBB/ArrB. While ArrB is resent to point to the beginning of ArrBB
@@ -284,11 +286,9 @@ void find_neurons(uint16_t framesIn[],
             //NeuronNAll[nu] = NeuronNCandidatesVolume[nu];
             
             // Update encountered maxima.
-            if(maxX<maxXInStack*5.){maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;}
-            if(maxY<maxYInStack*5.){maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;}
             //std::cout<<maxXInStack<<" "<<maxYInStack<<"\n";
-            //maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
-            //maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
+            maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
+            maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
 
         }
         
@@ -296,8 +296,10 @@ void find_neurons(uint16_t framesIn[],
         // Any other thing (like using the the max_InStack from the previous volume
         // produces a bleaching effect... I cannot understand why. And also I don't recall seeing this
         // in my recordings (on the new instrument).
-        maxXInStack0 = maxXInStack0*0.9995;
-        maxYInStack0 = maxYInStack0*0.9995;
+        //maxXInStack0 = maxXInStack0*0.9995;
+        //maxYInStack0 = maxYInStack0*0.9995;
+        maxXInStackOld = maxXInStack;
+        maxYInStackOld = maxYInStack;
         
         /**
         After the candidate neurons are found, select them using all the B 
