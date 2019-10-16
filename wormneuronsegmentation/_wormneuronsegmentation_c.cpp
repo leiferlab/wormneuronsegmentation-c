@@ -11,7 +11,7 @@
 #include <numpy/arrayobject.h>
 #include <iostream>
 #include <stdint.h>
-#include "../neuronsegmentation_c/neuronsegmentation.cpp"
+#include "../neuronsegmentation_c/neuronsegmentation.hpp"
 
 static PyObject *wormns_find_neurons(PyObject *self, PyObject *args);
 static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *args);

@@ -10,7 +10,7 @@ else:
     library_dirs = os.environ['LD_LIBRARY_PATH'].split(':')
 
 wormneuronsegmentation_c = Extension('wormneuronsegmentation._wormneuronsegmentation_c',
-                    sources = ['wormneuronsegmentation/_wormneuronsegmentation_c.cpp'],
+                    sources = ['neuronsegmentation_c/neuronsegmentation.cpp','wormneuronsegmentation/_wormneuronsegmentation_c.cpp'],
                     include_dirs = [numpy.get_include()],
                     libraries = libraries,
                     library_dirs = library_dirs,

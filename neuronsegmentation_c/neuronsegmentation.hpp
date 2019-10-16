@@ -6,6 +6,8 @@
     @author Francesco Randi
 **/
 
+#include <opencv2/core.hpp>
+
 
 void segment_singleframe_pipeline(uint16_t ImgIn[], 
 	int32_t sizex, int32_t sizey, 

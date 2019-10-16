@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-#include "neuronsegmentation.h"
+#include "neuronsegmentation.hpp"
 #include <iostream>
 
 void find_neurons_frames_sequence(uint16_t framesIn[],
