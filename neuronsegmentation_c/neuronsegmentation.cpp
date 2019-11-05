@@ -298,8 +298,10 @@ void find_neurons(uint16_t framesIn[],
         // in my recordings (on the new instrument).
         //maxXInStack0 = maxXInStack0*0.9995;
         //maxYInStack0 = maxYInStack0*0.9995;
-        maxXInStackOld = maxXInStack;
-        maxYInStackOld = maxYInStack;
+        //maxXInStackOld = maxXInStack;
+        //maxYInStackOld = maxYInStack;
+        maxXInStackOld = 0.75*maxXInStackOld+0.25*maxXInStack;
+        maxYInStackOld = 0.75*maxYInStackOld+0.25*maxYInStack;
         
         /**
         After the candidate neurons are found, select them using all the B 
