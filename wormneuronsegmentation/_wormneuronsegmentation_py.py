@@ -1,5 +1,6 @@
 import numpy as np
 import wormneuronsegmentation as wormns
+import pkg_resources
 
 def get_curvatureBoxProperties():
     boxIndices = [np.arange(1),np.arange(1,6),np.arange(6,19),np.arange(19,32),np.arange(32,45),np.arange(45,50),np.arange(50,51)]
@@ -245,6 +246,11 @@ def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None,
                             }
         
     NeuronYX = wormns.neuronConversion(NeuronN, NeuronXY, xyOrdering='yx')
+    
+    # Add parameters and module version to NeuronProperties
+    version = pkg_resources.get_distribution("wormneuronsegmentation").version
+    segmParam = {"threshold": threshold, "blur": blur, "version": version}
+    NeuronProperties['segmParam'] = segmParam
     
     return NeuronYX, NeuronProperties
     
