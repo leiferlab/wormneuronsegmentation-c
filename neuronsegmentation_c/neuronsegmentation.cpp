@@ -11,6 +11,7 @@
 #include <opencv2/imgproc.hpp>
 #include "neuronsegmentation.hpp"
 #include <iostream>
+#include <queue>
 
 void find_neurons_frames_sequence(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
@@ -286,9 +287,9 @@ void find_neurons(uint16_t framesIn[],
             //NeuronNAll[nu] = NeuronNCandidatesVolume[nu];
             
             // Update encountered maxima.
-            //std::cout<<maxXInStack<<" "<<maxYInStack<<"\n";
             maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
             maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
+            
 
         }
         
@@ -300,8 +301,12 @@ void find_neurons(uint16_t framesIn[],
         //maxYInStack0 = maxYInStack0*0.9995;
         //maxXInStackOld = maxXInStack;
         //maxYInStackOld = maxYInStack;
-        maxXInStackOld = 0.75*maxXInStackOld+0.25*maxXInStack;
-        maxYInStackOld = 0.75*maxYInStackOld+0.25*maxYInStack;
+        if(maxXInStack<3.*maxXInStackOld && maxYInStack<3.*maxYInStackOld &&
+            maxXInStack != 0. && maxYInStack != 0.0
+            ){
+            maxXInStackOld = 0.75*maxXInStackOld+0.25*maxXInStack;
+            maxYInStackOld = 0.75*maxYInStackOld+0.25*maxYInStack;
+        }
         
         /**
         After the candidate neurons are found, select them using all the B 
@@ -602,6 +607,8 @@ void find_neurons(uint16_t framesIn[],
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
         }
     }
+    
+    delete[] Zero;
 }
 
 /*
@@ -667,8 +674,10 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// Hessian, so that you don't get too large threshold because of very
 		// shar
 		// 100 us
-		cv::minMaxIdx(BX, &minX, &maxX, NULL, NULL);
-		cv::minMaxIdx(BY, &minY, &maxY, NULL, NULL);
+		//cv::minMaxIdx(BX, &minX, &maxX, NULL, NULL);
+		//cv::minMaxIdx(BY, &minY, &maxY, NULL, NULL);
+		maxX = kthlargest((float*)BX.data, sizex2*sizey2, 10);
+        maxY = kthlargest((float*)BY.data, sizex2*sizey2, 10);
 		if ( (maxXInStack == -1.0 && maxYInStack == -1.0) || 
 		     (maxXInStack < maxX || maxYInStack < maxY) ) {
 			threshX = threshold * maxX;
@@ -1101,3 +1110,15 @@ void segment_extract_curvature_single_frame(
 	}
 }
 
+float kthlargest(float array[], int size, int k) {
+    std::priority_queue<std::pair<float, int>> q;
+    for (int i = 0; i < size; ++i) {
+        q.push(std::pair<float, int>(array[i], i));
+    }
+    int ki;
+    for (int i = 0; i < k; ++i) {
+        ki = q.top().second;
+        q.pop();
+    }
+    return array[ki];
+}
