@@ -229,9 +229,18 @@ def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None,
         curvatureboxIndices = curvatureBoxProperties['boxIndices']
         curvatureboxNPlanes = curvatureBoxProperties['nPlane']
         
+        curvatureboxIndicesX = [np.array([10,23,36]), np.array([2,7,11,15,29,24,28,33,37,41,46]), 
+            np.array([0,1,3,5,6,8,12,16,18,19,21,25,29,31,32,34,38,42,44,45,47,49,50]),
+            np.array([4,9,13,17,22,26,30,35,39,43,48]), np.array([14,27,40])]
+        curvatureboxIndicesY = [np.array([6,19,32]), np.array([1,7,8,9,29,21,22,33,34,35,45]),
+            np.array([0,2,3,4,10,11,12,13,14,23,24,25,26,27,36,37,38,39,40,46,47,48,50]),
+            np.array([5,15,16,17,28,29,30,41,42,43,49]),np.array([18,31,44])]
+        
         NeuronProperties = {'curvature': NeuronCurvature, 
                             'boxNPlane': curvatureboxNPlanes, 
-                            'boxIndices': curvatureboxIndices}
+                            'boxIndices': curvatureboxIndices,
+                            'boxIndicesX': curvatureboxIndicesX,
+                            'boxIndicesY': curvatureboxIndicesY}
                             
     elif rectype=="2d":
         extractCurvatureBoxSize=13
@@ -243,6 +252,8 @@ def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None,
         NeuronProperties = {'curvature': NeuronCurvature,
                             'boxNPlane': 1,
                             'boxIndices': [np.arange(13)],
+                            'boxIndicesX': [np.array([4]),np.array([1,5,9]),np.array([0,2,6,10,12]),np.array([3,7,11]),np.array([8])],
+                            'boxIndicesY': [np.array([0]),np.array([1,2,3]),np.array([4,5,6,7,8]),np.array([9,10,11]),np.array([12])]
                             }
         
     NeuronYX = wormns.neuronConversion(NeuronN, NeuronXY, xyOrdering='yx')
