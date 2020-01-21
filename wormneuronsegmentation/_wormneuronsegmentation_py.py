@@ -111,9 +111,12 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     NeuronNAll = NeuronNAll[0:framesN]
     NeuronTot = np.sum(NeuronNAll)
     NeuronXYAll = NeuronXYAll[0:NeuronTot]
-    NeuronCurvature = NeuronCurvatureAll[0:(int)(NeuronTot*extractCurvatureBoxSize)]
+    # Exctract the relevant elements of NeuronCurvature. Also, change its sign
+    # so that it is the actual curvature (i.e. peak = min curvature), and not 
+    # the flipped version that I use in the segmentation code.
+    NeuronCurvature = -1.0*NeuronCurvatureAll[0:(int)(NeuronTot*extractCurvatureBoxSize)]
     
-    np.clip(NeuronCurvature,0,None,NeuronCurvature)
+    #np.clip(NeuronCurvature,0,None,NeuronCurvature)
     NeuronCurvature = NeuronCurvature.reshape((NeuronTot,extractCurvatureBoxSize))
     
     return NeuronNAll, NeuronXYAll, NeuronCurvature, diagnostics
@@ -329,7 +332,10 @@ def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65,
                     threshold, blur, extractCurvatureBoxSize)
     
     NeuronTot = np.sum(NeuronN)
-    NeuronCurvature = NeuronCurvature[0:NeuronTot*extractCurvatureBoxSize]
+    # Exctract the relevant elements of NeuronCurvature. Also, change its sign
+    # so that it is the actual curvature (i.e. peak = min curvature), and not 
+    # the flipped version that I use in the segmentation code.
+    NeuronCurvature = -1.0*NeuronCurvature[0:NeuronTot*extractCurvatureBoxSize]
     NeuronCurvature = NeuronCurvature.reshape((NeuronTot,extractCurvatureBoxSize))
                     
     return NeuronN, NeuronXY, NeuronCurvature
