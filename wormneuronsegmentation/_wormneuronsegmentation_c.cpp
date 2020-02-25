@@ -214,7 +214,7 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
     PyObject *framesIn_o;
     
     int sizex, sizey;
-    int32_t framesStride;
+    int32_t frame0, framesStride;
     
     int volumeN;
     PyObject *volumeFirstFrame_o;
@@ -231,8 +231,8 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
     PyObject *NeuronCurvatureAll_o;
     
     
-    if(!PyArg_ParseTuple(args, "iOiiiiOOOOOOOOOOOOfdiii", 
-            &framesN, &framesIn_o, &sizex, &sizey, &framesStride,
+    if(!PyArg_ParseTuple(args, "iOiiiiiOOOOOOOOOOOOfdiii", 
+            &framesN, &framesIn_o, &sizex, &sizey, &frame0, &framesStride,
             &volumeN, &volumeFirstFrame_o,
             &ArrA_o, &ArrBB_o, &ArrBX_o, &ArrBY_o, &ArrBth_o, &ArrBdil_o,
             &NeuronXYCandidatesVolume_o, &NeuronNCandidatesVolume_o,
@@ -309,6 +309,7 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
     //////////////////////////////////
     
     find_neurons(framesIn, framesN, sizex, sizey,
+        frame0,
         framesStride, // 1 or 2 (RFP RFP RFP or RFP GFP RFP GFP)
         volumeFirstFrame, volumeN,
         ArrA, ArrBB, ArrBX, ArrBY, ArrBth, ArrBdil, 

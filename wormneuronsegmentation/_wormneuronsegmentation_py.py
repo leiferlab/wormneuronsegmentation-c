@@ -8,7 +8,7 @@ def get_curvatureBoxProperties():
     
     return {'boxIndices': boxIndices, 'nPlane': nPlane}
 
-def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
+def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame, 
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
     maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51,
     returnAll=False):
@@ -19,6 +19,8 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     ----------
     framesIn: numpy array
         framesIn[i,ch,y,x] images. Note: Must be contiguous and row-major.
+    channel: integer
+        channel where to look for the neurons.
     channelsN: integer
         Number of channels present.
     volumeN: integer
@@ -70,6 +72,8 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
         channelsN = (np.uint32)(framesIn.shape[1])
         sizex = (np.uint32)(framesIn.shape[2])
         sizey = (np.uint32)(framesIn.shape[3])
+    
+    frame0 = (np.int32)(channel)
     frameStride = (np.int32)(channelsN)
     
     sizex2 = sizex // 2
@@ -93,7 +97,7 @@ def _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame,
     NeuronCurvatureAll = np.zeros(maxNeuronN*extractCurvatureBoxSize, 
                                   dtype=np.float32)
     
-    wormns.find_neurons(framesN, framesIn, sizex, sizey, frameStride,
+    wormns.find_neurons(framesN, framesIn, sizex, sizey, frame0, frameStride,
                     volumeN, volumeFirstFrame,
                     ArrA, ArrBB, ArrBX, ArrBY, ArrBth, ArrBdil,
                     NeuronXYCandidatesVolume, NeuronNCandidatesVolume,
@@ -169,8 +173,8 @@ def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
         
     return Neuron
     
-def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None, 
-    rectype="3d",
+def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1, 
+    volumeFirstFrame=None, rectype="3d",
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
     maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
     '''
@@ -180,6 +184,8 @@ def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None,
     ----------
     framesIn: numpy array
         framesIn[i,ch,y,x] images. Note: Must be contiguous and row-major.
+    channel: integer, optional
+        channel where to look for the neurons.
     channelsN: integer, optional (needed for volumetric images)
         Number of channels present.
     volumeN: integer, optional (needed for volumetric images)
@@ -224,7 +230,7 @@ def findNeurons(framesIn, channelsN=2, volumeN=1, volumeFirstFrame=None,
     
     if rectype=="3d":
         NeuronN, NeuronXY, NeuronCurvature, diagnostics = \
-            _findNeurons(framesIn, channelsN, volumeN, volumeFirstFrame, 
+            _findNeurons(framesIn, channel, channelsN, volumeN, volumeFirstFrame, 
                 threshold,blur,checkPlanesN,xydiameter,maxNeuronN,
                 maxFramesInVolume, extractCurvatureBoxSize)
                 

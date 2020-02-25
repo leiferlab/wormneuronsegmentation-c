@@ -72,6 +72,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	
 void find_neurons(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
+    int32_t frame0,
     int32_t framesStride,
     uint32_t volumeFirstFrame[], uint32_t volumeN,
     uint16_t ArrA[], 

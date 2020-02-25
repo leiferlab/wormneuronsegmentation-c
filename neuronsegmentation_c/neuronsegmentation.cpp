@@ -109,6 +109,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 
 void find_neurons(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
+    int32_t frame0, //channel where to do the segmentation (0 RFP, 1 GFP, ...)
     int32_t framesStride, // 1 or 2 (RFP RFP RFP or RFP GFP RFP GFP)
     uint32_t volumeFirstFrame[], uint32_t volumeN,
     uint16_t ArrA[], 
@@ -191,7 +192,7 @@ void find_neurons(uint16_t framesIn[],
     
     // Index for the frames with respect to the beginning
     int i = 0;
-    ImgIn = framesIn;
+    ImgIn = framesIn + sizexy*frame0;
     
     // Point to the first allocated B frame in ArrBB. The pointer ArrB will
     // be moved as the analysis proceeds through the volume.
