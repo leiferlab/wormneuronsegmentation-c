@@ -73,7 +73,7 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
         sizex = (np.uint32)(framesIn.shape[2])
         sizey = (np.uint32)(framesIn.shape[3])
     
-    frame0 = (np.int32)(channel)
+    frame0 = (np.int32)(frame0)
     frameStride = (np.int32)(channelsN)
     
     sizex2 = sizex // 2
@@ -125,7 +125,7 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
     
     return NeuronNAll, NeuronXYAll, NeuronCurvature, diagnostics
     
-def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
+def neuronConversion(NeuronN, NeuronXY, framesShape=(512,512), xyOrdering='xy', flattenFrames=False):
     '''Converts the results of _findNeurons to a nicer structure.
     
     Parameters
@@ -149,9 +149,12 @@ def neuronConversion(NeuronN, NeuronXY, xyOrdering='xy', flattenFrames=False):
         of neuron j in frame i.
     
     '''
+    rowLenght = framesShape[-1]
+    rowLenght2 = rowLenght//2
+    
     framesN = NeuronN.shape[0]
-    NeuronY = NeuronXY//256 
-    NeuronX = (NeuronXY - NeuronY*256)
+    NeuronY = NeuronXY//rowLenght2 
+    NeuronX = (NeuronXY - NeuronY*rowLenght2)
     NeuronX *=2
     NeuronY *=2
 
@@ -265,7 +268,7 @@ def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1,
                             'boxIndicesY': [np.array([0]),np.array([1,2,3]),np.array([4,5,6,7,8]),np.array([9,10,11]),np.array([12])]
                             }
         
-    NeuronYX = wormns.neuronConversion(NeuronN, NeuronXY, xyOrdering='yx')
+    NeuronYX = wormns.neuronConversion(NeuronN, NeuronXY, framesShape=framesIn.shape, xyOrdering='yx')
     
     # Add parameters and module version to NeuronProperties
     version = pkg_resources.get_distribution("wormneuronsegmentation").version
