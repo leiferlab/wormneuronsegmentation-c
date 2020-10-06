@@ -83,6 +83,7 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
 	float NeuronCurvatureAll[],
 	float threshold = 0.25, double blur = 0.65, uint32_t checkPlanesN = 5,
-	uint32_t xydiameter=3, uint32_t extractCurvatureBoxSize=51);
+	uint32_t xydiameter=3, uint32_t extractCurvatureBoxSize=51,
+	bool candidateCheck=true);
 	
 float kthlargest(float array[], int size, int k);

@@ -120,7 +120,7 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
 	float NeuronCurvatureAll[],
 	float threshold, double blur, uint32_t checkPlanesN, uint32_t xydiameter,
-	uint32_t extractCurvatureBoxSize
+	uint32_t extractCurvatureBoxSize, bool candidateCheck
 	) {
 	
 	/*
@@ -320,6 +320,7 @@ void find_neurons(uint16_t framesIn[],
         uint32_t *NeuronXYin, *NeuronXYout;
         uint32_t NeuronNin;
         
+        if(candidateCheck){
         if(checkPlanesN==5){
             // with B2 at nu=0 (B0=B1=Zero)
             nu = 0;
@@ -607,6 +608,7 @@ void find_neurons(uint16_t framesIn[],
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
         }
+    }
     }
     
     delete[] Zero;
