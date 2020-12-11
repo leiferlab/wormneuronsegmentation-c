@@ -10,7 +10,7 @@ def get_curvatureBoxProperties():
 
 def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame, 
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
-    maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51,
+    maxNeuronN=10000000, maxFramesInVolume=1000, extractCurvatureBoxSize=51,
     candidateCheck=True,returnAll=False):
     '''
     Finds neurons in a sequence of 3D images.
