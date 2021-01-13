@@ -22,7 +22,8 @@ void segment_check2dcandidates_5planes(
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout);
+	uint32_t *NeuronXYout, uint32_t &NeuronNout,
+	int32_t maxNeuronNPerVolume=400);
 
 // This is an alias for either of the two versions (3 or 5 max diameter)
 void segment_check2dcandidates_7planes(
@@ -30,21 +31,24 @@ void segment_check2dcandidates_7planes(
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
 	int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout, uint32_t maxdiameter);
+	uint32_t *NeuronXYout, uint32_t &NeuronNout, uint32_t maxdiameter,
+	int32_t maxNeuronNPerVolume=400);
 
 void segment_check2dcandidates_7planes_3maxdiameter(
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
 	int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout);
+	uint32_t *NeuronXYout, uint32_t &NeuronNout,
+	int32_t maxNeuronNPerVolume=400);
 	
 void segment_check2dcandidates_7planes_5maxdiameter(
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
 	int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout);
+	uint32_t *NeuronXYout, uint32_t &NeuronNout,
+	int32_t maxNeuronNPerVolume=400);
 	
 void segment_extract_curvature(
 	float ArrB0[], float ArrB1[], float ArrB2[],
@@ -83,6 +87,8 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
 	float NeuronCurvatureAll[],
 	float threshold = 0.25, double blur = 0.65, uint32_t checkPlanesN = 5,
-	uint32_t xydiameter=3, uint32_t extractCurvatureBoxSize=51);
+	uint32_t xydiameter=3, uint32_t extractCurvatureBoxSize=51,
+	bool candidateCheck=true,
+	int32_t maxNeuronNPerVolume=400);
 	
 float kthlargest(float array[], int size, int k);

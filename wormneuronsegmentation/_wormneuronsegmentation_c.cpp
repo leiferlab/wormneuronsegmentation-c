@@ -224,6 +224,8 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
     uint32_t checkPlanesN;
     uint32_t xydiameter;
     uint32_t extractCurvatureBoxSize;
+    int candidateCheck_i;
+    bool candidateCheck = true;
     
     PyObject *ArrA_o, *ArrBB_o, *ArrBX_o, *ArrBY_o, *ArrBth_o, *ArrBdil_o;
     PyObject *NeuronXYCandidatesVolume_o, *NeuronNCandidatesVolume_o;
@@ -231,7 +233,7 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
     PyObject *NeuronCurvatureAll_o;
     
     
-    if(!PyArg_ParseTuple(args, "iOiiiiiOOOOOOOOOOOOfdiii", 
+    if(!PyArg_ParseTuple(args, "iOiiiiiOOOOOOOOOOOOfdiiii", 
             &framesN, &framesIn_o, &sizex, &sizey, &frame0, &framesStride,
             &volumeN, &volumeFirstFrame_o,
             &ArrA_o, &ArrBB_o, &ArrBX_o, &ArrBY_o, &ArrBth_o, &ArrBdil_o,
@@ -239,7 +241,7 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
             &NeuronXYAll_o, &NeuronNAll_o,
             &NeuronCurvatureAll_o,
             &threshold, &blur, &checkPlanesN, &xydiameter,
-            &extractCurvatureBoxSize)) return NULL;
+            &extractCurvatureBoxSize, &candidateCheck_i)) return NULL;
     
     PyObject *framesIn_a = PyArray_FROM_OTF(framesIn_o, NPY_UINT16, NPY_IN_ARRAY);
     PyObject *volumeFirstFrame_a = PyArray_FROM_OTF(volumeFirstFrame_o, NPY_UINT32, NPY_IN_ARRAY);
@@ -302,6 +304,8 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
     uint32_t *NeuronNAll = (uint32_t*)PyArray_DATA(NeuronNAll_a);
     float *NeuronCurvatureAll = (float*)PyArray_DATA(NeuronCurvatureAll_a);
     
+    if(candidateCheck_i==0){candidateCheck=false;}
+    
     //////////////////////////////////
     //////////////////////////////////
     // Actual C code
@@ -317,7 +321,8 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
 	    NeuronNCandidatesVolume,
 	    NeuronXYAll, NeuronNAll,
 	    NeuronCurvatureAll,
-	    threshold, blur, checkPlanesN, xydiameter, extractCurvatureBoxSize);
+	    threshold, blur, checkPlanesN, xydiameter, extractCurvatureBoxSize,
+	    candidateCheck);
     
     //////////////////////////////////
     //////////////////////////////////

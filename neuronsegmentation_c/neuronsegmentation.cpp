@@ -120,7 +120,8 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
 	float NeuronCurvatureAll[],
 	float threshold, double blur, uint32_t checkPlanesN, uint32_t xydiameter,
-	uint32_t extractCurvatureBoxSize
+	uint32_t extractCurvatureBoxSize, bool candidateCheck,
+	int32_t maxNeuronNPerVolume
 	) {
 	
 	/*
@@ -320,6 +321,7 @@ void find_neurons(uint16_t framesIn[],
         uint32_t *NeuronXYin, *NeuronXYout;
         uint32_t NeuronNin;
         
+        if(candidateCheck){
         if(checkPlanesN==5){
             // with B2 at nu=0 (B0=B1=Zero)
             nu = 0;
@@ -335,7 +337,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
 
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -353,7 +356,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -375,7 +379,8 @@ void find_neurons(uint16_t framesIn[],
                 segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
                 
                 NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             }
@@ -394,7 +399,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -412,7 +418,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
         
@@ -437,7 +444,7 @@ void find_neurons(uint16_t framesIn[],
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
             segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
@@ -463,7 +470,7 @@ void find_neurons(uint16_t framesIn[],
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
             segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
@@ -489,7 +496,7 @@ void find_neurons(uint16_t framesIn[],
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
             segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
@@ -519,7 +526,7 @@ void find_neurons(uint16_t framesIn[],
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                 
                 segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
@@ -546,7 +553,7 @@ void find_neurons(uint16_t framesIn[],
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
             segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
@@ -572,7 +579,7 @@ void find_neurons(uint16_t framesIn[],
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
             segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
@@ -598,7 +605,7 @@ void find_neurons(uint16_t framesIn[],
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
             segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
@@ -607,6 +614,7 @@ void find_neurons(uint16_t framesIn[],
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
         }
+    }
     }
     
     delete[] Zero;
@@ -705,7 +713,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		for (int i = 0; i < sizex2*sizey2; i++) {
 			tmpBi = B.at<float>(i);
 			tmpBdili = Bdil.at<float>(i);
-			if (tmpBi != 0.0 && tmpBi == tmpBdili) {
+			if (tmpBi != 0.0 && tmpBi == tmpBdili && k<100) {
 				NeuronXY[k] = i;
 				k++;
 			}
@@ -719,7 +727,8 @@ void segment_check2dcandidates_5planes(
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+	uint32_t *NeuronXYout, uint32_t &NeuronNout,
+	int32_t maxNeuronNPerVolume) {
 
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
@@ -761,7 +770,7 @@ void segment_check2dcandidates_5planes(
 		if (Bxy < ArrB3[index]) ok = false;
 		if (Bxy < ArrB3[index + 1]) ok = false;
 		if (Bxy < ArrB3[index + sizeBx]) ok = false;
-**/		if (index > (uint32_t)sizeBx && index < upperlimit) {
+**/		if (index > (uint32_t)sizeBx && index < upperlimit && k < maxNeuronNPerVolume) {
 		    if (    (Bxy > ArrB0[index]) &&
 		            (Bxy > ArrB4[index]) &&
 		            (Bxy > ArrB1[index - sizeBx]) &&
@@ -787,16 +796,17 @@ void segment_check2dcandidates_7planes(
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
     int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout, uint32_t maxdiameter) {
+	uint32_t *NeuronXYout, uint32_t &NeuronNout, uint32_t maxdiameter,
+	int32_t maxNeuronNPerVolume) {
     
     // Alias for one of the two versions
     
     if(maxdiameter==3){
         segment_check2dcandidates_7planes_3maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
-        ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
+        ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout,maxNeuronNPerVolume);
     } else if(maxdiameter==5){
         segment_check2dcandidates_7planes_5maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
-        ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
+        ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout,maxNeuronNPerVolume);
     }
 	
 }
@@ -807,7 +817,8 @@ void segment_check2dcandidates_7planes_3maxdiameter(
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
     int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+	uint32_t *NeuronXYout, uint32_t &NeuronNout,
+	int32_t maxNeuronNPerVolume) {
 
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
@@ -825,7 +836,7 @@ void segment_check2dcandidates_7planes_3maxdiameter(
 		index = NeuronXYin[i];
 		Bxy = ArrB3[index];
 
-		if (index > (uint32_t)sizeBx && index < upperlimit) {
+		if (index > (uint32_t)sizeBx && index < upperlimit && k < maxNeuronNPerVolume) {
 		    if (    (Bxy > ArrB0[index]) &&
 		    
 		            (Bxy > ArrB6[index]) &&
@@ -864,7 +875,8 @@ void segment_check2dcandidates_7planes_5maxdiameter(
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
     int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+	uint32_t *NeuronXYout, uint32_t &NeuronNout,
+	int32_t maxNeuronNPerVolume) {
 
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
@@ -882,7 +894,7 @@ void segment_check2dcandidates_7planes_5maxdiameter(
 		index = NeuronXYin[i];
 		Bxy = ArrB3[index];
 
-		if (index > 2*((uint32_t)sizeBx) && index < upperlimit) {
+		if (index > 2*((uint32_t)sizeBx) && index < upperlimit && k < maxNeuronNPerVolume) {
 		    if (    (Bxy > ArrB0[index]) &&
 		    
 		            (Bxy > ArrB6[index]) &&

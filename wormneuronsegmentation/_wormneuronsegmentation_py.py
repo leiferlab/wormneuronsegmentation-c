@@ -10,8 +10,8 @@ def get_curvatureBoxProperties():
 
 def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame, 
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
-    maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51,
-    returnAll=False):
+    maxNeuronN=10000000, maxFramesInVolume=1000, extractCurvatureBoxSize=51,
+    candidateCheck=True,returnAll=False):
     '''
     Finds neurons in a sequence of 3D images.
     
@@ -49,6 +49,8 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
         Related to the size of the neighborhood of each neuron of which to store
         the local curvature. Right now it is hard coded, so don't use this
         parameter.
+    candidateCheck: bool, optional
+        If true, candidate neurons will be compared across planes.
         
     Returns
     -------
@@ -83,6 +85,8 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
     volumeN = (np.int32)(volumeN)
     volumeFirstFrame = np.array(volumeFirstFrame).astype(np.uint32)
     
+    candidateCheck_i = int(candidateCheck)
+    
     ArrA    = np.zeros(sizexy2, dtype=np.uint16)
     ArrBB   = np.zeros(sizexy2*maxFramesInVolume, dtype=np.float32)
     ArrBX   = np.zeros(sizexy2, dtype=np.float32)
@@ -105,7 +109,8 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
                     NeuronCurvatureAll,
                     (np.float32)(threshold), (np.float64)(blur), 
                     (np.uint32)(checkPlanesN), (np.uint32)(xydiameter),
-                    (np.uint32)(extractCurvatureBoxSize))
+                    (np.uint32)(extractCurvatureBoxSize),
+                    candidateCheck_i)
     
     diagnostics = {"ArrA": ArrA, "ArrBB": ArrBB, "ArrBX": ArrBX, "ArrBY": ArrBY,
                 "ArrBth": ArrBth, "ArrBdil": ArrBdil,
@@ -179,7 +184,8 @@ def neuronConversion(NeuronN, NeuronXY, framesShape=(512,512), xyOrdering='xy', 
 def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1, 
     volumeFirstFrame=None, rectype="3d",
     threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
-    maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51):
+    maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51,
+    candidateCheck=True, returnDiagnostics=False):
     '''
     Finds neurons in a sequence of 3D images.
     
@@ -235,7 +241,7 @@ def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1,
         NeuronN, NeuronXY, NeuronCurvature, diagnostics = \
             _findNeurons(framesIn, channel, channelsN, volumeN, volumeFirstFrame, 
                 threshold,blur,checkPlanesN,xydiameter,maxNeuronN,
-                maxFramesInVolume, extractCurvatureBoxSize)
+                maxFramesInVolume, extractCurvatureBoxSize, candidateCheck)
                 
         curvatureBoxProperties = get_curvatureBoxProperties()
         curvatureboxIndices = curvatureBoxProperties['boxIndices']
@@ -267,6 +273,7 @@ def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1,
                             'boxIndicesX': [np.array([4]),np.array([1,5,9]),np.array([0,2,6,10,12]),np.array([3,7,11]),np.array([8])],
                             'boxIndicesY': [np.array([0]),np.array([1,2,3]),np.array([4,5,6,7,8]),np.array([9,10,11]),np.array([12])]
                             }
+        diagnostics = {}
         
     NeuronYX = wormns.neuronConversion(NeuronN, NeuronXY, framesShape=framesIn.shape, xyOrdering='yx')
     
@@ -275,7 +282,10 @@ def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1,
     segmParam = {"threshold": threshold, "blur": blur, "version": version}
     NeuronProperties['segmParam'] = segmParam
     
-    return NeuronYX, NeuronProperties
+    if returnDiagnostics:
+        return NeuronYX, NeuronProperties, diagnostics
+    else:
+        return NeuronYX, NeuronProperties
     
     
 def initVariables(framesN,sizex,sizey,maxNeuronN=100000,extractCurvatureBoxSize=13):
