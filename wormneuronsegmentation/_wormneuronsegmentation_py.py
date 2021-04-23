@@ -9,7 +9,7 @@ def get_curvatureBoxProperties():
     return {'boxIndices': boxIndices, 'nPlane': nPlane}
 
 def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame, 
-    threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
+    threshold=0.25, blur=0.65, dil_size=5, checkPlanesN=5, xydiameter=3,
     maxNeuronN=10000000, maxFramesInVolume=1000, extractCurvatureBoxSize=51,
     candidateCheck=True,returnAll=False):
     '''
@@ -107,7 +107,8 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
                     NeuronXYCandidatesVolume, NeuronNCandidatesVolume,
                     NeuronXYAll, NeuronNAll,
                     NeuronCurvatureAll,
-                    (np.float32)(threshold), (np.float64)(blur), 
+                    (np.float32)(threshold), (np.float64)(blur),
+                    (np.uint32)(dil_size),
                     (np.uint32)(checkPlanesN), (np.uint32)(xydiameter),
                     (np.uint32)(extractCurvatureBoxSize),
                     candidateCheck_i)
@@ -183,7 +184,7 @@ def neuronConversion(NeuronN, NeuronXY, framesShape=(512,512), xyOrdering='xy', 
     
 def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1, 
     volumeFirstFrame=None, rectype="3d",
-    threshold=0.25, blur=0.65, checkPlanesN=5, xydiameter=3,
+    threshold=0.25, blur=0.65, dil_size=5, checkPlanesN=5, xydiameter=3,
     maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51,
     candidateCheck=True, returnDiagnostics=False):
     '''
@@ -240,7 +241,7 @@ def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1,
     if rectype=="3d":
         NeuronN, NeuronXY, NeuronCurvature, diagnostics = \
             _findNeurons(framesIn, channel, channelsN, volumeN, volumeFirstFrame, 
-                threshold,blur,checkPlanesN,xydiameter,maxNeuronN,
+                threshold,blur,dil_size,checkPlanesN,xydiameter,maxNeuronN,
                 maxFramesInVolume, extractCurvatureBoxSize, candidateCheck)
                 
         curvatureBoxProperties = get_curvatureBoxProperties()
@@ -264,7 +265,7 @@ def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1,
         extractCurvatureBoxSize=13
         NeuronN, NeuronXY, NeuronCurvature = wormns.findNeuronsFramesSequence(
                             framesIn,
-                            threshold=threshold,blur=blur,
+                            threshold=threshold,blur=blur,dil_size=dil_size,
                             maxNeuronN=maxNeuronN,
                             extractCurvatureBoxSize=extractCurvatureBoxSize)
         NeuronProperties = {'curvature': NeuronCurvature,
@@ -279,7 +280,7 @@ def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1,
     
     # Add parameters and module version to NeuronProperties
     version = pkg_resources.get_distribution("wormneuronsegmentation").version
-    segmParam = {"threshold": threshold, "blur": blur, "version": version}
+    segmParam = {"threshold": threshold, "blur": blur, "dil_size": dil_size, "version": version}
     NeuronProperties['segmParam'] = segmParam
     
     if returnDiagnostics:
@@ -308,7 +309,7 @@ def initVariables(framesN,sizex,sizey,maxNeuronN=100000,extractCurvatureBoxSize=
             NeuronCurvature
 
 
-def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65, 
+def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65, dil_size=5,
                                 maxNeuronN=100000, extractCurvatureBoxSize=13):
     '''
     Finds neurons in a sequence of 2D images (no comparisons across frames done)
@@ -348,7 +349,7 @@ def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65,
                     framesN, framesIn, sizex, sizey, frameStride,
                     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil,
                     NeuronXY, NeuronN, NeuronCurvature, 
-                    threshold, blur, extractCurvatureBoxSize)
+                    threshold, blur, dil_size, extractCurvatureBoxSize)
     
     NeuronTot = np.sum(NeuronN)
     # Exctract the relevant elements of NeuronCurvature. Also, change its sign

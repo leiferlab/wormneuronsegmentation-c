@@ -7,6 +7,7 @@
 **/
 
 #include <stdint.h>
+#include <algorithm>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include "neuronsegmentation.hpp"
@@ -21,7 +22,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	float ArrBth[], float ArrBdil[],
 	uint32_t NeuronXY[], uint32_t NeuronN[],
 	float NeuronCurvature[],
-	float threshold, double blur,
+	float threshold, double blur, uint32_t dil_size,
 	uint32_t extractCurvatureBoxSize
 	) {
 	
@@ -52,7 +53,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	cv::Mat Bdil = cv::Mat(sizex2, sizey2, CV_32F, ArrBdil);
 	cv::Mat C = cv::Mat(sizeC, 1, CV_32F, ArrC);
 	cv::Mat OneHalf = cv::Mat(1, 1, CV_32F, cv::Scalar::all(0.5));
-	cv::Mat K = cv::Mat(3, 3, CV_32F, cv::Scalar::all(1));
+	cv::Mat K = cv::Mat(dil_size, dil_size, CV_32F, cv::Scalar::all(1));
 	    
     double maxX, maxY, maxXInStack, maxYInStack;
     //float threshold = 0.25;//0.25
@@ -119,7 +120,8 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
 	float NeuronCurvatureAll[],
-	float threshold, double blur, uint32_t checkPlanesN, uint32_t xydiameter,
+	float threshold, double blur, uint32_t dil_size,
+	uint32_t checkPlanesN, uint32_t xydiameter,
 	uint32_t extractCurvatureBoxSize, bool candidateCheck,
 	int32_t maxNeuronNPerVolume
 	) {
@@ -184,7 +186,7 @@ void find_neurons(uint16_t framesIn[],
 	cv::Mat Bdil = cv::Mat(sizex2, sizey2, CV_32F, ArrBdil);
 	cv::Mat C = cv::Mat(sizeC, 1, CV_32F, ArrC);
 	cv::Mat OneHalf = cv::Mat(1, 1, CV_32F, cv::Scalar::all(0.5));
-	cv::Mat K = cv::Mat(xydiameter, xydiameter, CV_32F, cv::Scalar::all(1));
+	cv::Mat K = cv::Mat(dil_size, dil_size, CV_32F, cv::Scalar::all(1));
 	
 	cv::Mat B;
        
@@ -306,8 +308,8 @@ void find_neurons(uint16_t framesIn[],
         if(maxXInStack<3.*maxXInStackOld && maxYInStack<3.*maxYInStackOld &&
             maxXInStack != 0. && maxYInStack != 0.0
             ){
-            maxXInStackOld = 0.75*maxXInStackOld+0.25*maxXInStack;
-            maxYInStackOld = 0.75*maxYInStackOld+0.25*maxYInStack;
+            maxXInStackOld = 0.95*maxXInStackOld+0.05*maxXInStack; //0.75  + 0.25
+            maxYInStackOld = 0.95*maxYInStackOld+0.05*maxYInStack;
         }
         
         /**
@@ -710,12 +712,33 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// 60 us
 		float tmpBi;
 		float tmpBdili;
+		uint16_t A_neigh[25];
+		uint16_t i_max_subset, i_max;
 		for (int i = 0; i < sizex2*sizey2; i++) {
 			tmpBi = B.at<float>(i);
 			tmpBdili = Bdil.at<float>(i);
 			if (tmpBi != 0.0 && tmpBi == tmpBdili && k<100) {
-				NeuronXY[k] = i;
-				k++;
+			    
+			    /**FIND ACTUAL MAX IN A
+			    if(i<(sizex2*(sizey2-2)) && i%sizex2<(sizex2-2) && i%sizex2>2){
+			        for(int q=-2;q<=2;q++) {
+			            for(int p=-2;p<=2;p++){
+			                A_neigh[(q+2)*5+(p+2)] = A.at<uint16_t>(i+q*sizex2+p);
+			            }
+			        }
+			        // Find index of maximum value in the neighborhood, first
+			        // as index in the neighborhood subset and then as index
+			        // in the full image array.
+			        i_max_subset = std::distance(A_neigh, std::max_element(A_neigh , A_neigh + 25));
+			        i_max = i+sizex2*(i_max_subset/5)+i_max_subset%5;
+			        // Store the index as a neuron candidate in this plane.
+			        NeuronXY[k] = i_max;
+			        END FIND ACTUAL MAX IN A**/
+			        
+			        // THIS TO EXTRACT THE POSITION BASED ON CURVATURE ALONE
+			    NeuronXY[k] = i;
+			    k++;
+				//}
 			}
 		}
 	
@@ -993,6 +1016,7 @@ void segment_extract_curvature(
     if(totalBoxSize==51){
 	for (uint i = 0; i < NeuronNin; i++) {
 	    index = NeuronXYin[i];
+	    if(index>2*sizeBx && index<(sizeBx-2)*sizeBy) {
 		*(NeuronCurvatureOut+k+0) = ArrB0[index];
 		
 		*(NeuronCurvatureOut+k+1)  = ArrB1[index - sizeBx];
@@ -1050,7 +1074,12 @@ void segment_extract_curvature(
 		*(NeuronCurvatureOut+k+49) = ArrB5[index + sizeBx];
 		
 		*(NeuronCurvatureOut+k+50) = ArrB6[index];
-		
+	    } else {
+	        for(int curvi=0;curvi<51;curvi++){
+	            *(NeuronCurvatureOut+k+curvi) = 1;
+	        }
+	    }
+	    
 		k += totalBoxSize;
 	}
 	}

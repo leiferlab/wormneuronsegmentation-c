@@ -71,7 +71,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	float ArrBth[], float ArrBdil[],
 	uint32_t NeuronXY[], uint32_t NeuronN[],
 	float NeuronCurvature[],
-	float threshold = 0.25, double blur = 0.65,
+	float threshold = 0.25, double blur = 0.65, uint32_t dil_size=7,
 	uint32_t extractCurvatureBoxSize=13);
 	
 void find_neurons(uint16_t framesIn[],
@@ -86,7 +86,8 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
 	float NeuronCurvatureAll[],
-	float threshold = 0.25, double blur = 0.65, uint32_t checkPlanesN = 5,
+	float threshold = 0.25, double blur = 0.65, uint32_t dil_size=7,
+	uint32_t checkPlanesN = 5,
 	uint32_t xydiameter=3, uint32_t extractCurvatureBoxSize=51,
 	bool candidateCheck=true,
 	int32_t maxNeuronNPerVolume=400);
