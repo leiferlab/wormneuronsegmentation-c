@@ -162,6 +162,12 @@ void find_neurons(uint16_t framesIn[],
     // Declare the arrays that you don't need to be accessible from outside C++.
     int32_t sizeC = 5;
     float ArrC[5] = {-2.0, 1.0, 2.0, 1.0, -2.0};
+    //int32_t sizeC = 7;
+    //float ArrC[7] = {-2.0,0.0,1.2,1.6,1.2,0.0,-2.0};
+    //int32_t sizeC = 13;
+    //float ArrC[13] = {-2.0, -1.0, -0.1818182, 0.4545454, 0.9090909,
+    //                  1.1818182, 1.27272739, 1.1818182, 0.90909099, 
+    //                  0.4545454, -0.1818182, -1.0, -2.0};
     
     // Zero is used later in the selection of the candidate neurons.   
     float * Zero;
@@ -687,8 +693,10 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// 100 us
 		//cv::minMaxIdx(BX, &minX, &maxX, NULL, NULL);
 		//cv::minMaxIdx(BY, &minY, &maxY, NULL, NULL);
-		maxX = kthlargest((float*)BX.data, sizex2*sizey2, 10);
-        maxY = kthlargest((float*)BY.data, sizex2*sizey2, 10);
+		
+		////This was before 30th April 2021 change
+		maxX = kthlargest((float*)BX.data, sizex2*sizey2, 10); //10
+        maxY = kthlargest((float*)BY.data, sizex2*sizey2, 10); //10
 		if ( (maxXInStack == -1.0 && maxYInStack == -1.0) || 
 		     (maxXInStack < maxX || maxYInStack < maxY) ) {
 			threshX = threshold * maxX;
