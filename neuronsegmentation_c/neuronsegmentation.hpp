@@ -16,6 +16,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 	cv::Mat& Bth, cv::Mat& Bdil, cv::Mat& K,
 	uint32_t NeuronXY[], uint32_t &NeuronN, 
 	double &maxX, double &maxY, double maxXInStack, double maxYInStack,
+	int &chunk_tot_count, int chunk_tot_thresh=10,
 	float threshold = 0.25, double blur = 0.65, bool resize = true);
 
 void segment_check2dcandidates_5planes(
@@ -27,6 +28,8 @@ void segment_check2dcandidates_5planes(
 
 // This is an alias for either of the two versions (3 or 5 max diameter)
 void segment_check2dcandidates_7planes(
+    uint16_t ArrA0[], uint16_t ArrA1[], uint16_t ArrA2[],
+    uint16_t ArrA3[], uint16_t ArrA4[], uint16_t ArrA5[], uint16_t ArrA6[],
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
 	int32_t sizeBx, int32_t sizeBy, 
@@ -35,6 +38,8 @@ void segment_check2dcandidates_7planes(
 	int32_t maxNeuronNPerVolume=400);
 
 void segment_check2dcandidates_7planes_3maxdiameter(
+    uint16_t ArrA0[], uint16_t ArrA1[], uint16_t ArrA2[],
+    uint16_t ArrA3[], uint16_t ArrA4[], uint16_t ArrA5[], uint16_t ArrA6[],
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
 	int32_t sizeBx, int32_t sizeBy, 
@@ -43,6 +48,8 @@ void segment_check2dcandidates_7planes_3maxdiameter(
 	int32_t maxNeuronNPerVolume=400);
 	
 void segment_check2dcandidates_7planes_5maxdiameter(
+    uint16_t ArrA0[], uint16_t ArrA1[], uint16_t ArrA2[],
+    uint16_t ArrA3[], uint16_t ArrA4[], uint16_t ArrA5[], uint16_t ArrA6[],
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
 	int32_t sizeBx, int32_t sizeBy, 

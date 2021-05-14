@@ -87,7 +87,7 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
     
     candidateCheck_i = int(candidateCheck)
     
-    ArrA    = np.zeros(sizexy2, dtype=np.uint16)
+    ArrAA    = np.zeros(sizexy2*maxFramesInVolume, dtype=np.uint16) #TODO AA
     ArrBB   = np.zeros(sizexy2*maxFramesInVolume, dtype=np.float32)
     ArrBX   = np.zeros(sizexy2, dtype=np.float32)
     ArrBY   = np.zeros(sizexy2, dtype=np.float32)
@@ -103,7 +103,7 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
     
     wormns.find_neurons(framesN, framesIn, sizex, sizey, frame0, frameStride,
                     volumeN, volumeFirstFrame,
-                    ArrA, ArrBB, ArrBX, ArrBY, ArrBth, ArrBdil,
+                    ArrAA, ArrBB, ArrBX, ArrBY, ArrBth, ArrBdil, #TODO AA
                     NeuronXYCandidatesVolume, NeuronNCandidatesVolume,
                     NeuronXYAll, NeuronNAll,
                     NeuronCurvatureAll,
@@ -113,7 +113,7 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
                     (np.uint32)(extractCurvatureBoxSize),
                     candidateCheck_i)
     
-    diagnostics = {"ArrA": ArrA, "ArrBB": ArrBB, "ArrBX": ArrBX, "ArrBY": ArrBY,
+    diagnostics = {"ArrA": ArrAA, "ArrBB": ArrBB, "ArrBX": ArrBX, "ArrBY": ArrBY, #TODO AA
                 "ArrBth": ArrBth, "ArrBdil": ArrBdil,
                 "NeuronXYCandidatesVolume": NeuronXYCandidatesVolume,
                 "NeuronNCandidatesVolume": NeuronNCandidatesVolume}
