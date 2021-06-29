@@ -17,7 +17,8 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 	uint32_t NeuronXY[], uint32_t &NeuronN, 
 	double &maxX, double &maxY, double maxXInStack, double maxYInStack,
 	int &chunk_tot_count, int chunk_tot_thresh=10,
-	float threshold = 0.25, double blur = 0.65, bool resize = true);
+	float threshold = 0.25, double blur = 0.65, uint16_t A_thresh = 110,
+	bool resize = true);
 
 void segment_check2dcandidates_5planes(
 	float ArrB0[], float ArrB1[], float ArrB2[],
@@ -79,6 +80,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	uint32_t NeuronXY[], uint32_t NeuronN[],
 	float NeuronCurvature[],
 	float threshold = 0.25, double blur = 0.65, uint32_t dil_size=7,
+	uint16_t A_thresh=110,
 	uint32_t extractCurvatureBoxSize=13);
 	
 void find_neurons(uint16_t framesIn[],
@@ -93,7 +95,8 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
 	float NeuronCurvatureAll[],
-	float threshold = 0.25, double blur = 0.65, uint32_t dil_size=7,
+	float threshold = 0.25, double blur = 0.65, uint32_t dil_size=7, 
+	uint16_t A_thresh=110,
 	uint32_t checkPlanesN = 5,
 	uint32_t xydiameter=3, uint32_t extractCurvatureBoxSize=51,
 	bool candidateCheck=true,

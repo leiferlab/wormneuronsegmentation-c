@@ -111,17 +111,18 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
     int32_t framesStride;
     uint32_t extractCurvatureBoxSize;
     uint32_t dil_size;
+    uint16_t A_thresh;
     float threshold;
     double blur;
     
     PyObject *ArrA_o, *ArrB_o, *ArrBX_o, *ArrBY_o, *ArrBth_o, *ArrBdil_o;
     PyObject *NeuronXY_o, *NeuronN_o,*NeuronCurvature_o;
     
-    if(!PyArg_ParseTuple(args, "iOiiiOOOOOOOOOfdii", 
+    if(!PyArg_ParseTuple(args, "iOiiiOOOOOOOOOfdiii", 
             &framesN, &framesIn_o, &sizex, &sizey, &framesStride,
             &ArrA_o, &ArrB_o, &ArrBX_o, &ArrBY_o, &ArrBth_o, &ArrBdil_o,
             &NeuronXY_o, &NeuronN_o, &NeuronCurvature_o,
-            &threshold, &blur, &dil_size,
+            &threshold, &blur, &dil_size, &A_thresh,
             &extractCurvatureBoxSize)) return NULL;
     
     PyObject *framesIn_a = PyArray_FROM_OTF(framesIn_o, NPY_UINT16, NPY_IN_ARRAY);
@@ -183,7 +184,7 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
         framesStride, // 1 or 2 (RFP RFP RFP or RFP GFP RFP GFP)
         ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, 
 	    NeuronXY, NeuronN, NeuronCurvature,
-	    threshold, blur, dil_size, extractCurvatureBoxSize);
+	    threshold, blur, dil_size, A_thresh, extractCurvatureBoxSize);
     
     //////////////////////////////////
     //////////////////////////////////
@@ -225,6 +226,7 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
     double blur;
     uint32_t checkPlanesN;
     uint32_t xydiameter, dil_size;
+    uint16_t A_thresh;
     uint32_t extractCurvatureBoxSize;
     int candidateCheck_i;
     bool candidateCheck = true;
@@ -235,14 +237,14 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
     PyObject *NeuronCurvatureAll_o;
     
     
-    if(!PyArg_ParseTuple(args, "iOiiiiiOOOOOOOOOOOOfdiiiii", 
+    if(!PyArg_ParseTuple(args, "iOiiiiiOOOOOOOOOOOOfdiiiiii", 
             &framesN, &framesIn_o, &sizex, &sizey, &frame0, &framesStride,
             &volumeN, &volumeFirstFrame_o,
             &ArrA_o, &ArrBB_o, &ArrBX_o, &ArrBY_o, &ArrBth_o, &ArrBdil_o,
             &NeuronXYCandidatesVolume_o, &NeuronNCandidatesVolume_o,
             &NeuronXYAll_o, &NeuronNAll_o,
             &NeuronCurvatureAll_o,
-            &threshold, &blur, &dil_size, &checkPlanesN, &xydiameter,
+            &threshold, &blur, &dil_size, &A_thresh, &checkPlanesN, &xydiameter,
             &extractCurvatureBoxSize, &candidateCheck_i)) return NULL;
     
     PyObject *framesIn_a = PyArray_FROM_OTF(framesIn_o, NPY_UINT16, NPY_IN_ARRAY);
@@ -323,7 +325,7 @@ static PyObject *wormns_find_neurons(PyObject *self, PyObject *args) {
 	    NeuronNCandidatesVolume,
 	    NeuronXYAll, NeuronNAll,
 	    NeuronCurvatureAll,
-	    threshold, blur, dil_size,
+	    threshold, blur, dil_size, A_thresh,
 	    checkPlanesN, xydiameter, extractCurvatureBoxSize,
 	    candidateCheck);
     
