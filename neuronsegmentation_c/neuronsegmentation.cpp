@@ -22,7 +22,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	float ArrBth[], float ArrBdil[],
 	uint32_t NeuronXY[], uint32_t NeuronN[],
 	float NeuronCurvature[],
-	float threshold, double blur, uint32_t dil_size,
+	float threshold, double blur, uint32_t dil_size, uint16_t A_thresh,
 	uint32_t extractCurvatureBoxSize
 	) {
 	
@@ -72,7 +72,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
         NeuronXY, NeuronN[0],
         maxX, maxY, maxXInStack, maxYInStack, 
         chunk_tot_count, chunk_tot_thresh,
-        threshold, blur, true);
+        threshold, blur, A_thresh, true);
         
     maxXInStack = maxX;
     maxYInStack = maxY;
@@ -85,7 +85,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
             NeuronXY, NeuronN[nu],
             maxX, maxY, maxXInStack, maxYInStack, 
             chunk_tot_count, chunk_tot_thresh,
-            threshold, blur, true);
+            threshold, blur, A_thresh, true);
         
         segment_extract_curvature_single_frame(ArrB,sizex2,sizey2,
                     NeuronXY, NeuronN[nu],
@@ -126,7 +126,7 @@ void find_neurons(uint16_t framesIn[],
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
 	float NeuronCurvatureAll[],
-	float threshold, double blur, uint32_t dil_size,
+	float threshold, double blur, uint32_t dil_size, uint16_t A_thresh,
 	uint32_t checkPlanesN, uint32_t xydiameter,
 	uint32_t extractCurvatureBoxSize, bool candidateCheck,
 	int32_t maxNeuronNPerVolume
@@ -248,7 +248,7 @@ void find_neurons(uint16_t framesIn[],
             NeuronXYCandidates, NeuronNCandidatesVolume[nu],
             maxX, maxY, maxXInStack, maxYInStack, 
             chunk_tot_count, chunk_tot_thresh,
-            threshold, blur, true);
+            threshold, blur, A_thresh, true);
         
         // Move pointer to frames to the next one
         ImgIn = ImgIn + sizexy*framesStride;
@@ -307,7 +307,7 @@ void find_neurons(uint16_t framesIn[],
                 NeuronXYCandidates, NeuronNCandidatesVolume[nu],
                 maxX, maxY, maxXInStackOld, maxYInStackOld, 
                 chunk_tot_count, chunk_tot_thresh,
-                threshold, blur, true);
+                threshold, blur, A_thresh, true);
             /**
             Move the pointers to the next frames in framesIn/ImgIn and 
             ArrBB/ArrB. While ArrB is resent to point to the beginning of ArrBB
@@ -745,7 +745,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 	uint32_t NeuronXY[], uint32_t &NeuronN, 
 	double &maxX, double &maxY, double maxXInStack, double maxYInStack,
 	int &chunk_tot_count, int chunk_tot_thresh,
-	float threshold, double blur, bool resize) {
+	float threshold, double blur, uint16_t A_thresh, bool resize) {
 	
 	// The execution times below are for the lab computer:
 	// Dual Intel Xeon Processor E5-2643 v4 
@@ -771,7 +771,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 			
 		// Determine if it's an empty image by counting the number of 
 		// contiguous chunks above a threshold.
-		uint16_t A_thresh = 110;
+		//uint16_t A_thresh = 110;
 		int chunk = 4;
 		int chunk_int_count;
 		chunk_tot_count=0;
@@ -792,10 +792,10 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		
 		
 		//Gamma correction			
-        cv::Mat Ag = cv::Mat(sizex2, sizey2, CV_32F, cv::Scalar::all(0.0));
+        /*cv::Mat Ag = cv::Mat(sizex2, sizey2, CV_32F, cv::Scalar::all(0.0));
         for(int pq=0;pq<sizex2*sizey2;pq++){
             Ag.at<float>(pq) = pow(std::min(std::max(A.at<uint16_t>(pq)-110.,0.0),2000.),0.5);
-        }
+        }*/
         
 		// Calculate -d2/dx2 and -d2/dy2 with the filter passed as C.
 		// In this way, the CV_32F images will saturate the positive 
@@ -806,8 +806,8 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// function. (Saves 100 microseconds)
 		// 300 us
 
-		cv::sepFilter2D(Ag, BX, CV_32F, C, OneHalf); //FIXME Ag
-		cv::sepFilter2D(Ag, BY, CV_32F, OneHalf, C);
+		cv::sepFilter2D(A, BX, CV_32F, C, OneHalf); //FIXME Ag. If you want the gamma correction 
+		cv::sepFilter2D(A, BY, CV_32F, OneHalf, C); //to be active replace A with Ag.
 		cv::add(BX,BY,B);
 		
 		// Threshold out some noise below a fraction of the maximum values:

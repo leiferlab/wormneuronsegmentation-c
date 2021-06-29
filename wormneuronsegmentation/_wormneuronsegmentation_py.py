@@ -9,7 +9,8 @@ def get_curvatureBoxProperties():
     return {'boxIndices': boxIndices, 'nPlane': nPlane}
 
 def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame, 
-    threshold=0.25, blur=0.65, dil_size=5, checkPlanesN=5, xydiameter=3,
+    threshold=0.25, blur=0.65, dil_size=5, A_thresh=110, checkPlanesN=5, 
+    xydiameter=3,
     maxNeuronN=10000000, maxFramesInVolume=1000, extractCurvatureBoxSize=51,
     candidateCheck=True,returnAll=False):
     '''
@@ -108,7 +109,7 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
                     NeuronXYAll, NeuronNAll,
                     NeuronCurvatureAll,
                     (np.float32)(threshold), (np.float64)(blur),
-                    (np.uint32)(dil_size),
+                    (np.uint32)(dil_size), (np.uint16)(A_thresh),
                     (np.uint32)(checkPlanesN), (np.uint32)(xydiameter),
                     (np.uint32)(extractCurvatureBoxSize),
                     candidateCheck_i)
@@ -184,7 +185,8 @@ def neuronConversion(NeuronN, NeuronXY, framesShape=(512,512), xyOrdering='xy', 
     
 def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1, 
     volumeFirstFrame=None, rectype="3d",
-    threshold=0.25, blur=0.65, dil_size=5, checkPlanesN=5, xydiameter=3,
+    threshold=0.25, blur=0.65, dil_size=5, A_thresh=110, checkPlanesN=5, 
+    xydiameter=3,
     maxNeuronN=10000000, maxFramesInVolume=100, extractCurvatureBoxSize=51,
     candidateCheck=True, returnDiagnostics=False):
     '''
@@ -241,7 +243,8 @@ def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1,
     if rectype=="3d":
         NeuronN, NeuronXY, NeuronCurvature, diagnostics = \
             _findNeurons(framesIn, channel, channelsN, volumeN, volumeFirstFrame, 
-                threshold,blur,dil_size,checkPlanesN,xydiameter,maxNeuronN,
+                threshold,blur,dil_size,A_thresh,checkPlanesN,xydiameter,
+                maxNeuronN,
                 maxFramesInVolume, extractCurvatureBoxSize, candidateCheck)
                 
         curvatureBoxProperties = get_curvatureBoxProperties()
@@ -266,6 +269,7 @@ def findNeurons(framesIn, channel=0, channelsN=2, volumeN=1,
         NeuronN, NeuronXY, NeuronCurvature = wormns.findNeuronsFramesSequence(
                             framesIn,
                             threshold=threshold,blur=blur,dil_size=dil_size,
+                            A_thresh=A_thresh,
                             maxNeuronN=maxNeuronN,
                             extractCurvatureBoxSize=extractCurvatureBoxSize)
         NeuronProperties = {'curvature': NeuronCurvature,
