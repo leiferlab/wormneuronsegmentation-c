@@ -1023,6 +1023,7 @@ void segment_check2dcandidates_5planes(
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
 	uint32_t *NeuronXYout, uint32_t &NeuronNout,
 	int32_t maxNeuronNPerVolume) {
+	//uint32_t *NeuronNAll, uint32_t *volumeFirstFrame, bool check_if_other_candidate
 
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
@@ -1065,6 +1066,15 @@ void segment_check2dcandidates_5planes(
 		if (Bxy < ArrB3[index + 1]) ok = false;
 		if (Bxy < ArrB3[index + sizeBx]) ok = false;
 **/		if (index > (uint32_t)sizeBx && index < upperlimit && k < maxNeuronNPerVolume) {
+
+            /**if(check_if_other_candidate){
+                ok2 = true;
+                for(int l=-2;l<2;l++){
+                for(int q=0;q<NeuronNAll[*(volumeFirstFrame+l)];q++){
+                    if(NeuronXYAll[
+                }}
+            }**/
+            
 		    if (    (Bxy > ArrB0[index]) &&
 		            (Bxy > ArrB4[index]) &&
 		            (Bxy > ArrB1[index - sizeBx]) &&

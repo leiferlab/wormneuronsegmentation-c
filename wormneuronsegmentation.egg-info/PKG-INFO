@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: wormneuronsegmentation
+Version: v1.0-23-g668b403.dirty
+Summary: Optimized segmentation code to locate the nuclei of neurons in stacks of fluorescence images of the worm's brain
+Home-page: UNKNOWN
+Author: Francesco Randi @ Leiferlab, Princeton Physics
+Author-email: francesco.randi@gmail.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
