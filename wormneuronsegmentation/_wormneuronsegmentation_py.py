@@ -69,12 +69,12 @@ def _findNeurons(framesIn, frame0, channelsN, volumeN, volumeFirstFrame,
     
     framesN = (np.uint32)(framesIn.shape[0])
     if len(framesIn.shape)==3:
-        sizex = (np.uint32)(framesIn.shape[1])//channelsN
-        sizey = (np.uint32)(framesIn.shape[2])
+        sizex = (np.uint32)(framesIn.shape[-1])//channelsN
+        sizey = (np.uint32)(framesIn.shape[-2])
     elif len(framesIn.shape)==4:
         channelsN = (np.uint32)(framesIn.shape[1])
-        sizex = (np.uint32)(framesIn.shape[2])
-        sizey = (np.uint32)(framesIn.shape[3])
+        sizex = (np.uint32)(framesIn.shape[-1])
+        sizey = (np.uint32)(framesIn.shape[-2])
     
     frame0 = (np.int32)(frame0)
     frameStride = (np.int32)(channelsN)
