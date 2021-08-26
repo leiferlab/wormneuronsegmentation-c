@@ -761,9 +761,9 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		
 		// Resize image
 		cv::resize(cv::Mat(sizex, sizey, CV_16U, ImgIn), A, 
-			A.size(), 0, 0, cv::INTER_AREA);
+			A.size(), 0, 0, cv::INTER_LINEAR);//INTER_AREA
 			
-		cv::GaussianBlur(A, A, cv::Size(3, 3), blur, blur);
+		//cv::GaussianBlur(A, A, cv::Size(3, 3), blur, blur);
 			
 		// Determine if it's an empty image by counting the number of 
 		// contiguous chunks above a threshold.
@@ -815,7 +815,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 			        if(A.at<uint16_t>(i+1)>A_thresh){n_A_above_thresh++;}
 			        if(A.at<uint16_t>(i+sizex2)>A_thresh){n_A_above_thresh++;}*/
 		        }
-		        if(n_A_above_thresh > 8){
+		        if(n_A_above_thresh > 3){
 			        NeuronXY[k] = i;
 			        k++;
 			    }
