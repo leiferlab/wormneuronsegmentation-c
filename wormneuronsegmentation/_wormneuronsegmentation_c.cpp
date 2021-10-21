@@ -104,7 +104,7 @@ PyMODINIT_FUNC PyInit__wormneuronsegmentation_c(void) {
 
 static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *args) {
 
-    int framesN;
+    int framesN=1;
     PyObject *framesIn_o;
     
     int sizex, sizey;
@@ -125,7 +125,8 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
             &threshold, &blur, &dil_size, &A_thresh,
             &extractCurvatureBoxSize)) return NULL;
     
-    PyObject *framesIn_a = PyArray_FROM_OTF(framesIn_o, NPY_UINT16, NPY_IN_ARRAY);
+    //PyObject *framesIn_a = PyArray_FROM_OTF(framesIn_o, NPY_UINT16, NPY_IN_ARRAY);
+    PyArrayObject *framesIn_a = (PyArrayObject*) PyArray_FROM_OT(framesIn_o, NPY_UINT16);
     PyObject *ArrA_a = PyArray_FROM_OTF(ArrA_o, NPY_UINT16, NPY_IN_ARRAY);
     PyObject *ArrB_a = PyArray_FROM_OTF(ArrB_o, NPY_FLOAT32, NPY_IN_ARRAY);
     PyObject *ArrBX_a = PyArray_FROM_OTF(ArrBX_o, NPY_FLOAT32, NPY_IN_ARRAY);
@@ -135,6 +136,8 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
     PyObject *NeuronXY_a = PyArray_FROM_OTF(NeuronXY_o, NPY_UINT32, NPY_IN_ARRAY);
     PyObject *NeuronN_a = PyArray_FROM_OTF(NeuronN_o, NPY_UINT32, NPY_IN_ARRAY);
     PyObject *NeuronCurvature_a = PyArray_FROM_OTF(NeuronCurvature_o, NPY_FLOAT32, NPY_IN_ARRAY);
+    
+    framesN = *(PyArray_SHAPE(framesIn_a));
     
     // Check that the above conversion worked, otherwise decrease the reference
     // count and return NULL.                                 
@@ -180,7 +183,7 @@ static PyObject *wormns_find_neurons_frames_sequence(PyObject *self, PyObject *a
     //////////////////////////////////
     //////////////////////////////////
     
-    find_neurons_frames_sequence(framesIn, framesN, sizex, sizey,
+    find_neurons_frames_sequence_c(framesIn, framesN, sizex, sizey,
         framesStride, // 1 or 2 (RFP RFP RFP or RFP GFP RFP GFP)
         ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil, 
 	    NeuronXY, NeuronN, NeuronCurvature,

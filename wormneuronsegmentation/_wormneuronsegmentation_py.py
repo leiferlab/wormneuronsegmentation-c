@@ -314,7 +314,8 @@ def initVariables(framesN,sizex,sizey,maxNeuronN=100000,extractCurvatureBoxSize=
 
 
 def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65, dil_size=5,
-                                maxNeuronN=100000, extractCurvatureBoxSize=13):
+                              A_thresh=110,
+                              maxNeuronN=100000, extractCurvatureBoxSize=13):
     '''
     Finds neurons in a sequence of 2D images (no comparisons across frames done)
     
@@ -336,7 +337,7 @@ def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65, dil_size=5,
     #sizex=512
     #sizey=512
     
-    framesN = (np.uint32)(framesN)
+    #framesN = (np.uint32)(framesN)
     sizex = (np.uint32)(sizex)
     sizey = (np.uint32)(sizey)
     frameStride = (np.uint32)(framesStride)
@@ -349,12 +350,16 @@ def findNeuronsFramesSequence(framesIn, threshold=0.25, blur=0.65, dil_size=5,
             wormns.initVariables(framesN,sizex,sizey,maxNeuronN,
                                     extractCurvatureBoxSize)
     
+    # Passing framesN does not work with the parser (?!)
+    # I'm getting framesN as the shape of framesIn_a directly on the other
+    # side.
     wormns.find_neurons_frames_sequence(
                     framesN, framesIn, sizex, sizey, frameStride,
                     ArrA, ArrB, ArrBX, ArrBY, ArrBth, ArrBdil,
                     NeuronXY, NeuronN, NeuronCurvature, 
-                    threshold, blur, dil_size, extractCurvatureBoxSize)
-    
+                    threshold, blur, dil_size, A_thresh,
+                    extractCurvatureBoxSize)
+
     NeuronTot = np.sum(NeuronN)
     # Exctract the relevant elements of NeuronCurvature. Also, change its sign
     # so that it is the actual curvature (i.e. peak = min curvature), and not 

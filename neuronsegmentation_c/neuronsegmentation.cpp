@@ -14,7 +14,7 @@
 #include <iostream>
 #include <queue>
 
-void find_neurons_frames_sequence(uint16_t framesIn[],
+void find_neurons_frames_sequence_c(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
     int32_t framesStride, // 1 or 2 (RFP RFP RFP or RFP GFP RFP GFP)
     uint16_t ArrA[], 
@@ -763,7 +763,7 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		cv::resize(cv::Mat(sizex, sizey, CV_16U, ImgIn), A, 
 			A.size(), 0, 0, cv::INTER_LINEAR);//INTER_AREA
 			
-		//cv::GaussianBlur(A, A, cv::Size(3, 3), blur, blur);
+		cv::GaussianBlur(A, A, cv::Size(3, 3), blur, blur);
 			
 		// Determine if it's an empty image by counting the number of 
 		// contiguous chunks above a threshold.
@@ -777,7 +777,8 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 	        }
 	        if(chunk_int_count==chunk){chunk_tot_count+=1;}
 		}
-        
+		
+		
         if(chunk_tot_count>chunk_tot_thresh/10.0){
         
 		// Dilate
