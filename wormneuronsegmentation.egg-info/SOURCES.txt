@@ -1,4 +1,6 @@
+LICENCE.md
 README.md
+pyproject.toml
 setup.py
 neuronsegmentation_c/neuronsegmentation.cpp
 wormneuronsegmentation/__init__.py
