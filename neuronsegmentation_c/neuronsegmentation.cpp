@@ -7,12 +7,14 @@
 **/
 
 #include <stdint.h>
+#include <algorithm>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include "neuronsegmentation.hpp"
 #include <iostream>
+#include <queue>
 
-void find_neurons_frames_sequence(uint16_t framesIn[],
+void find_neurons_frames_sequence_c(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
     int32_t framesStride, // 1 or 2 (RFP RFP RFP or RFP GFP RFP GFP)
     uint16_t ArrA[], 
@@ -20,7 +22,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	float ArrBth[], float ArrBdil[],
 	uint32_t NeuronXY[], uint32_t NeuronN[],
 	float NeuronCurvature[],
-	float threshold, double blur,
+	float threshold, double blur, uint32_t dil_size, uint16_t A_thresh,
 	uint32_t extractCurvatureBoxSize
 	) {
 	
@@ -51,7 +53,7 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 	cv::Mat Bdil = cv::Mat(sizex2, sizey2, CV_32F, ArrBdil);
 	cv::Mat C = cv::Mat(sizeC, 1, CV_32F, ArrC);
 	cv::Mat OneHalf = cv::Mat(1, 1, CV_32F, cv::Scalar::all(0.5));
-	cv::Mat K = cv::Mat(3, 3, CV_32F, cv::Scalar::all(1));
+	cv::Mat K = cv::Mat(dil_size, dil_size, CV_32F, cv::Scalar::all(1));
 	    
     double maxX, maxY, maxXInStack, maxYInStack;
     //float threshold = 0.25;//0.25
@@ -61,12 +63,16 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
     
     maxXInStack = -1.0;
     maxYInStack = -1.0;
+    int chunk_tot_count;
+    int chunk_tot_thresh = 10;
         
     // Run the single frame segmentation to initialize maxX/YInStack
     segment_singleframe_pipeline(ImgIn, sizex, sizey, 
         C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
         NeuronXY, NeuronN[0],
-        maxX, maxY, maxXInStack, maxYInStack, threshold, blur, true);
+        maxX, maxY, maxXInStack, maxYInStack, 
+        chunk_tot_count, chunk_tot_thresh,
+        threshold, blur, A_thresh, true);
         
     maxXInStack = maxX;
     maxYInStack = maxY;
@@ -77,7 +83,9 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
         segment_singleframe_pipeline(ImgIn, sizex, sizey, 
             C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
             NeuronXY, NeuronN[nu],
-            maxX, maxY, maxXInStack, maxYInStack, threshold, blur, true);
+            maxX, maxY, maxXInStack, maxYInStack, 
+            chunk_tot_count, chunk_tot_thresh,
+            threshold, blur, A_thresh, true);
         
         segment_extract_curvature_single_frame(ArrB,sizex2,sizey2,
                     NeuronXY, NeuronN[nu],
@@ -108,17 +116,20 @@ void find_neurons_frames_sequence(uint16_t framesIn[],
 
 void find_neurons(uint16_t framesIn[],
     uint32_t framesN, int32_t sizex, int32_t sizey,
+    int32_t frame0, //channel where to do the segmentation (0 RFP, 1 GFP, ...)
     int32_t framesStride, // 1 or 2 (RFP RFP RFP or RFP GFP RFP GFP)
     uint32_t volumeFirstFrame[], uint32_t volumeN,
-    uint16_t ArrA[], 
+    uint16_t ArrAA[], //TODO AA
     float ArrBB[], float ArrBX[], float ArrBY[], 
 	float ArrBth[], float ArrBdil[],
 	uint32_t NeuronXYCandidatesVolume[], 
 	uint32_t NeuronNCandidatesVolume[],
 	uint32_t NeuronXYAll[], uint32_t NeuronNAll[],
 	float NeuronCurvatureAll[],
-	float threshold, double blur, uint32_t checkPlanesN, uint32_t xydiameter,
-	uint32_t extractCurvatureBoxSize
+	float threshold, double blur, uint32_t dil_size, uint16_t A_thresh,
+	uint32_t checkPlanesN, uint32_t xydiameter,
+	uint32_t extractCurvatureBoxSize, bool candidateCheck,
+	int32_t maxNeuronNPerVolume
 	) {
 	
 	/*
@@ -157,8 +168,16 @@ void find_neurons(uint16_t framesIn[],
     // Declare the arrays that you don't need to be accessible from outside C++.
     int32_t sizeC = 5;
     float ArrC[5] = {-2.0, 1.0, 2.0, 1.0, -2.0};
+    //int32_t sizeC = 7;
+    //float ArrC[7] = {-2.0,0.0,1.2,1.6,1.2,0.0,-2.0};
+    //int32_t sizeC = 13;
+    //float ArrC[13] = {-2.0, -1.0, -0.1818182, 0.4545454, 0.9090909,1.1818182, 1.27272739, 1.1818182, 0.90909099, 0.4545454, -0.1818182, -1.0, -2.0};
     
     // Zero is used later in the selection of the candidate neurons.   
+    uint16_t * Zero_uint16;
+    Zero_uint16 = new uint16_t[sizexy2];
+    for(int k=0; k<sizexy2; k++) { Zero_uint16[k] = 0; }
+    
     float * Zero;
     Zero = new float[sizexy2];
     for(int k=0; k<sizexy2; k++) { Zero[k] = 0.0; }
@@ -166,23 +185,32 @@ void find_neurons(uint16_t framesIn[],
     // Pointer to ImgIn inside framesIn[]
     uint16_t * ImgIn;
     
+    // Pointer to ArrA inside ArrAA
+    uint16_t *ArrA; //TODO AA
+    
     // Pointer to ArrB inside ArrBB
     float *ArrB;
     
     // Pointers to B0, B1, B2, B3, B4 for the candidate check.
+    uint16_t *A0, *A1, *A2, *A3, *A4; //TODO AA
     float *B0, *B1, *B2, *B3, *B4;
     
     // Create the cv::Mat header for all the images but B, which will need to 
     // be changed at every frame within a volume, so that they can be stored.
-    cv::Mat A = cv::Mat(sizex2, sizey2, CV_16U, ArrA);
 	cv::Mat BX = cv::Mat(sizex2, sizey2, CV_32F, ArrBX);
 	cv::Mat BY = cv::Mat(sizex2, sizey2, CV_32F, ArrBY);
 	cv::Mat Bth = cv::Mat(sizex2, sizey2, CV_32F, ArrBth);
 	cv::Mat Bdil = cv::Mat(sizex2, sizey2, CV_32F, ArrBdil);
 	cv::Mat C = cv::Mat(sizeC, 1, CV_32F, ArrC);
 	cv::Mat OneHalf = cv::Mat(1, 1, CV_32F, cv::Scalar::all(0.5));
-	cv::Mat K = cv::Mat(xydiameter, xydiameter, CV_32F, cv::Scalar::all(1));
+	cv::Mat K = cv::Mat(dil_size, dil_size, CV_8U, cv::Scalar::all(1));
+    for(int i=0;i<dil_size;i++){
+    for(int j=0;j<std::abs(i-(int)dil_size/2);j++){
+        K.at<uint8_t>(i*dil_size+j) = 0;
+        K.at<uint8_t>(i*(dil_size+1)-j) = 0;
+    }}
 	
+	cv::Mat A; //TODO AA
 	cv::Mat B;
        
     double maxX, maxY, maxXInStack, maxYInStack, maxXInStackOld, maxYInStackOld;
@@ -190,11 +218,12 @@ void find_neurons(uint16_t framesIn[],
     
     // Index for the frames with respect to the beginning
     int i = 0;
-    ImgIn = framesIn;
+    ImgIn = framesIn + sizexy*frame0;
     
     // Point to the first allocated B frame in ArrBB. The pointer ArrB will
     // be moved as the analysis proceeds through the volume.
     ArrB = ArrBB;
+    ArrA = ArrAA; //TODO AA
     
     // Same as above
     NeuronXYCandidates = NeuronXYCandidatesVolume;
@@ -203,13 +232,18 @@ void find_neurons(uint16_t framesIn[],
     maxXInStack = -1.0;
     maxYInStack = -1.0;
     
+    // Initialize chunk_tot_count and chunk_tot_thresh
+    int chunk_tot_count;
+    int chunk_tot_max_in_stack=0;
+    int chunk_tot_thresh=10;
+    
     int framesInVolume = volumeFirstFrame[1] - volumeFirstFrame[0];
     
     // Segment each frame nu independently and find the candidate neurons.
     for(int nu=0; nu<framesInVolume; nu++) {
-        
         // Create the Mat header for the pointer ArrB, that changes at every
         // iteration.
+        A = cv::Mat(sizex2, sizey2, CV_16U, ArrA); //TODO AA
         B = cv::Mat(sizex2, sizey2, CV_32F, ArrB);
         
         // With the adjusted pointers and Mat headers, run the single frame
@@ -217,7 +251,9 @@ void find_neurons(uint16_t framesIn[],
         segment_singleframe_pipeline(ImgIn, sizex, sizey, 
             C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
             NeuronXYCandidates, NeuronNCandidatesVolume[nu],
-            maxX, maxY, maxXInStack, maxYInStack, threshold, blur, true);
+            maxX, maxY, maxXInStack, maxYInStack, 
+            chunk_tot_count, chunk_tot_thresh,
+            threshold, blur, A_thresh, true);
         
         // Move pointer to frames to the next one
         ImgIn = ImgIn + sizexy*framesStride;
@@ -225,10 +261,14 @@ void find_neurons(uint16_t framesIn[],
         // Update encountered maxima.
         maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
         maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
+        if (chunk_tot_max_in_stack<chunk_tot_count) {
+            chunk_tot_max_in_stack = chunk_tot_count;
+        }
     }
     
     maxXInStackOld = maxXInStack;
     maxYInStackOld = maxYInStack;
+    chunk_tot_thresh = chunk_tot_max_in_stack;
     
     // Bring pointer to frames to the beginning for the actual scan
     ImgIn = framesIn;
@@ -237,6 +277,7 @@ void find_neurons(uint16_t framesIn[],
     for(uint mu=0; mu<volumeN; mu++) {
         // Point to the first allocated B frame in ArrBB. The pointer ArrB will
         // be moved as the analysis proceeds through the volume.
+        ArrA = ArrAA; //TODO AA
         ArrB = ArrBB;
         
         // Same as above
@@ -249,6 +290,9 @@ void find_neurons(uint16_t framesIn[],
         // reinitialize max_InStack at the beginning of every volume.
         maxXInStack = -1.0;
         maxYInStack = -1.0;
+        maxX = 0.0;
+        maxY = 0.0;
+        chunk_tot_max_in_stack=0;
         
         int framesInVolume = volumeFirstFrame[mu+1] - volumeFirstFrame[mu];
         
@@ -257,6 +301,7 @@ void find_neurons(uint16_t framesIn[],
             
             // Create the Mat header for the pointer ArrB, that changes at every
             // iteration.
+            A = cv::Mat(sizex2, sizey2, CV_16U, ArrA); //TODO AA
             B = cv::Mat(sizex2, sizey2, CV_32F, ArrB);
             
             // With the adjusted pointers and Mat headers, run the single frame
@@ -266,7 +311,8 @@ void find_neurons(uint16_t framesIn[],
                 C, sizeC, A, B, BX, BY, Bth, Bdil, K, 
                 NeuronXYCandidates, NeuronNCandidatesVolume[nu],
                 maxX, maxY, maxXInStackOld, maxYInStackOld, 
-                threshold, blur, true);
+                chunk_tot_count, chunk_tot_thresh,
+                threshold, blur, A_thresh, true);
             /**
             Move the pointers to the next frames in framesIn/ImgIn and 
             ArrBB/ArrB. While ArrB is resent to point to the beginning of ArrBB
@@ -276,6 +322,7 @@ void find_neurons(uint16_t framesIn[],
             **/
             i++;
             ImgIn = ImgIn + sizexy*framesStride;
+            ArrA = ArrA + sizexy2; //TODO AA
             ArrB = ArrB + sizexy2;
             
             /**
@@ -286,9 +333,11 @@ void find_neurons(uint16_t framesIn[],
             //NeuronNAll[nu] = NeuronNCandidatesVolume[nu];
             
             // Update encountered maxima.
-            //std::cout<<maxXInStack<<" "<<maxYInStack<<"\n";
             maxXInStack = (maxXInStack<maxX)?maxX:maxXInStack;
             maxYInStack = (maxYInStack<maxY)?maxY:maxYInStack;
+            if (chunk_tot_max_in_stack<chunk_tot_count) {
+                chunk_tot_max_in_stack = chunk_tot_count;
+            }
 
         }
         
@@ -298,8 +347,15 @@ void find_neurons(uint16_t framesIn[],
         // in my recordings (on the new instrument).
         //maxXInStack0 = maxXInStack0*0.9995;
         //maxYInStack0 = maxYInStack0*0.9995;
-        maxXInStackOld = maxXInStack;
-        maxYInStackOld = maxYInStack;
+        //maxXInStackOld = maxXInStack;
+        //maxYInStackOld = maxYInStack;
+        if(maxXInStack<3.*maxXInStackOld && maxYInStack<3.*maxYInStackOld &&
+            maxXInStack != 0. && maxYInStack != 0.0
+            ){
+            maxXInStackOld = 0.75*maxXInStackOld+0.25*maxXInStack; //0.75  + 0.25
+            maxYInStackOld = 0.75*maxYInStackOld+0.25*maxYInStack;
+        }
+        chunk_tot_thresh = chunk_tot_max_in_stack;
         
         /**
         After the candidate neurons are found, select them using all the B 
@@ -312,6 +368,7 @@ void find_neurons(uint16_t framesIn[],
         uint32_t *NeuronXYin, *NeuronXYout;
         uint32_t NeuronNin;
         
+        if(candidateCheck){
         if(checkPlanesN==5){
             // with B2 at nu=0 (B0=B1=Zero)
             nu = 0;
@@ -327,7 +384,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
 
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -345,7 +403,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -367,7 +426,8 @@ void find_neurons(uint16_t framesIn[],
                 segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
                 
                 NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             }
@@ -386,7 +446,8 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
@@ -404,16 +465,27 @@ void find_neurons(uint16_t framesIn[],
             segment_check2dcandidates_5planes(B0, B1, B2, B3, B4, 
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
-                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu]);
+                    NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
+                    maxNeuronNPerVolume);
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
         
         } else if(checkPlanesN==7) {
             // You need two additional pointers
+            uint16_t *A5, *A6; //TODO AA
             float *B5, *B6;
         
             // with B3 at nu=0 (B0=B1=B2=Zero)
             nu = 0;
+            
+            A0 = Zero_uint16; //TODO AA
+            A1 = Zero_uint16;
+            A2 = Zero_uint16;
+            A3 = ArrAA;
+            A4 = ArrAA + sizexy2;
+            A5 = ArrAA + 2*sizexy2;
+            A6 = ArrAA + 3*sizexy2;
+            
             B0 = Zero;
             B1 = Zero;
             B2 = Zero;
@@ -425,22 +497,32 @@ void find_neurons(uint16_t framesIn[],
             NeuronNin = NeuronNCandidatesVolume[0];
             NeuronXYout = NeuronXYAll + NeuronNInAllPreviousVolumes;
                     
-            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+            segment_check2dcandidates_7planes(A0, A1, A2, A3, A4, A5, A6, //TODO AA
+                    B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
-            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+            /*segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-	                NeuronCurvature, extractCurvatureBoxSize);
+	                NeuronCurvature, extractCurvatureBoxSize);*/
             NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
 
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
             // with B3 at nu=1 (B0=B1=Zero)
             nu = 1;
-            B0 = Zero;
+            
+            A0 = Zero_uint16;
+            A1 = Zero_uint16;
+            A2 = ArrAA;
+            A3 = ArrAA + sizexy2;
+            A4 = ArrAA + 2*sizexy2;
+            A5 = ArrAA + 3*sizexy2;
+            A6 = ArrAA + 4*sizexy2;
+            
+            B0 = Zero; //TODO AA
             B1 = Zero;
             B2 = ArrBB;
             B3 = ArrBB + sizexy2;
@@ -451,21 +533,31 @@ void find_neurons(uint16_t framesIn[],
             NeuronNin = NeuronNCandidatesVolume[1];
             NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
             
-            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+            segment_check2dcandidates_7planes(A0, A1, A2, A3, A4, A5, A6, //TODO AA
+                    B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
-            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+            /*segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-	                NeuronCurvature, extractCurvatureBoxSize);
+	                NeuronCurvature, extractCurvatureBoxSize);*/
             NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
             // with B3 at nu=2 (B0=Zero)
             nu = 2;
+            
+            A0 = Zero_uint16; //TODO AA
+            A1 = ArrAA;
+            A2 = ArrAA + sizexy2;
+            A3 = ArrAA + 2*sizexy2;
+            A4 = ArrAA + 3*sizexy2;
+            A5 = ArrAA + 4*sizexy2;
+            A6 = ArrAA + 5*sizexy2;
+            
             B0 = Zero;
             B1 = ArrBB;
             B2 = ArrBB + sizexy2;
@@ -477,15 +569,16 @@ void find_neurons(uint16_t framesIn[],
             NeuronNin = NeuronNCandidatesVolume[1];
             NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
             
-            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+            segment_check2dcandidates_7planes(A0, A1, A2, A3, A4, A5, A6, //TODO AA
+                    B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
-            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+            /*segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-	                NeuronCurvature, extractCurvatureBoxSize);
+	                NeuronCurvature, extractCurvatureBoxSize);*/
             NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
             
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
@@ -493,6 +586,14 @@ void find_neurons(uint16_t framesIn[],
             for(int nu=3; nu<framesInVolume-3; nu++) {
                 // Move the pointers to the right positions.
                 
+                A0 = ArrAA + (nu-3)*sizexy2; //TODO AA
+                A1 = ArrAA + (nu-2)*sizexy2;
+                A2 = ArrAA + (nu-1)*sizexy2;
+                A3 = ArrAA + (nu)*sizexy2;
+                A4 = ArrAA + (nu+1)*sizexy2;
+                A5 = ArrAA + (nu+2)*sizexy2;
+                A6 = ArrAA + (nu+3)*sizexy2;                
+                                
                 // The actual "Hessians"
                 B0 = ArrBB + (nu-3)*sizexy2;
                 B1 = ArrBB + (nu-2)*sizexy2;
@@ -507,15 +608,16 @@ void find_neurons(uint16_t framesIn[],
                 NeuronNin = NeuronNCandidatesVolume[nu];
                 NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
                 
-                segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+                segment_check2dcandidates_7planes(A0, A1, A2, A3, A4, A5, A6, //TODO AA
+                    B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                 
-                segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+                /*segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-	                NeuronCurvature, extractCurvatureBoxSize);
+	                NeuronCurvature, extractCurvatureBoxSize);*/
                 NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
                 
                 NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
@@ -523,6 +625,15 @@ void find_neurons(uint16_t framesIn[],
             
             // with B3 at nu=framesInVolume-3 (B6=Zero)
             int nu = framesInVolume - 3;
+            
+            A0 = ArrAA + (framesInVolume-6)*sizexy2;
+            A1 = ArrAA + (framesInVolume-5)*sizexy2;
+            A2 = ArrAA + (framesInVolume-4)*sizexy2;
+            A3 = ArrAA + (framesInVolume-3)*sizexy2;
+            A4 = ArrAA + (framesInVolume-2)*sizexy2;
+            A5 = ArrAA + (framesInVolume-1)*sizexy2;
+            A6 = Zero_uint16;
+            
             B0 = ArrBB + (framesInVolume-6)*sizexy2;
             B1 = ArrBB + (framesInVolume-5)*sizexy2;
             B2 = ArrBB + (framesInVolume-4)*sizexy2;
@@ -534,21 +645,31 @@ void find_neurons(uint16_t framesIn[],
             NeuronNin = NeuronNCandidatesVolume[nu];
             NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
             
-            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+            segment_check2dcandidates_7planes(A0, A1, A2, A3, A4, A5, A6, //TODO AA
+                    B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
-            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+            /*segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-	                NeuronCurvature, extractCurvatureBoxSize);
+	                NeuronCurvature, extractCurvatureBoxSize);*/
             NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
             // with B3 at nu=framesInVolume-2 (B6=B5=Zero)
             nu = framesInVolume - 2;
+            
+            A0 = ArrAA + (framesInVolume-5)*sizexy2; //TODO AA
+            A1 = ArrAA + (framesInVolume-4)*sizexy2;
+            A2 = ArrAA + (framesInVolume-3)*sizexy2;
+            A3 = ArrAA + (framesInVolume-2)*sizexy2;
+            A4 = ArrAA + (framesInVolume-1)*sizexy2;
+            A5 = Zero_uint16;
+            A6 = Zero_uint16;
+            
             B0 = ArrBB + (framesInVolume-5)*sizexy2;
             B1 = ArrBB + (framesInVolume-4)*sizexy2;
             B2 = ArrBB + (framesInVolume-3)*sizexy2;
@@ -560,21 +681,31 @@ void find_neurons(uint16_t framesIn[],
             NeuronNin = NeuronNCandidatesVolume[nu];
             NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
             
-            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+            segment_check2dcandidates_7planes(A0, A1, A2, A3, A4, A5, A6, //TODO AA
+                    B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
-            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+            /*segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-	                NeuronCurvature, extractCurvatureBoxSize);
+	                NeuronCurvature, extractCurvatureBoxSize);*/
             NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
             
             // with B3 at nu=framesInVolume-1 (B6=Zero)
             nu = framesInVolume - 1;
+            
+            A0 = ArrAA + (framesInVolume-4)*sizexy2; //TODO AA
+            A1 = ArrAA + (framesInVolume-3)*sizexy2;
+            A2 = ArrAA + (framesInVolume-2)*sizexy2;
+            A3 = ArrAA + (framesInVolume-1)*sizexy2;
+            A4 = Zero_uint16;
+            A5 = Zero_uint16;
+            A6 = Zero_uint16;
+            
             B0 = ArrBB + (framesInVolume-4)*sizexy2;
             B1 = ArrBB + (framesInVolume-3)*sizexy2;
             B2 = ArrBB + (framesInVolume-2)*sizexy2;
@@ -586,20 +717,25 @@ void find_neurons(uint16_t framesIn[],
             NeuronNin = NeuronNCandidatesVolume[nu];
             NeuronXYout += NeuronNAll[volumeFirstFrame[mu]+nu-1];
             
-            segment_check2dcandidates_7planes(B0, B1, B2, B3, B4, B5, B6,
+            segment_check2dcandidates_7planes(A0, A1, A2, A3, A4, A5, A6, //TODO AA
+                    B0, B1, B2, B3, B4, B5, B6,
                     sizex2, sizey2, 
                     NeuronXYin, NeuronNin,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-                    xydiameter);
+                    xydiameter, maxNeuronNPerVolume);
                     
-            segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
+            /*segment_extract_curvature(B0,B1,B2,B3,B4,B5,B6,sizex2,sizey2,
                     NeuronXYout, NeuronNAll[volumeFirstFrame[mu]+nu],
-	                NeuronCurvature, extractCurvatureBoxSize);
+	                NeuronCurvature, extractCurvatureBoxSize);*/
             NeuronCurvature += NeuronNAll[volumeFirstFrame[mu]+nu]*extractCurvatureBoxSize;
                     
             NeuronNInAllPreviousVolumes += NeuronNAll[volumeFirstFrame[mu]+nu];
         }
     }
+    }
+    
+    delete[] Zero;
+    delete[] Zero_uint16; //TODO AA
 }
 
 /*
@@ -613,7 +749,99 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 	cv::Mat& Bth, cv::Mat& Bdil, cv::Mat& K,
 	uint32_t NeuronXY[], uint32_t &NeuronN, 
 	double &maxX, double &maxY, double maxXInStack, double maxYInStack,
-	float threshold, double blur, bool resize) {
+	int &chunk_tot_count, int chunk_tot_thresh,
+	float threshold, double blur, uint16_t A_thresh, bool resize) {
+	
+	uint32_t k = 0;
+
+	if (resize) {
+		// Assume that both sizes of the image are even numbers.
+		int sizex2 = sizex / 2;
+		int sizey2 = sizey / 2;
+		
+		// Resize image
+		cv::resize(cv::Mat(sizex, sizey, CV_16U, ImgIn), A, 
+			A.size(), 0, 0, cv::INTER_LINEAR);//INTER_AREA
+			
+		cv::GaussianBlur(A, A, cv::Size(3, 3), blur, blur);
+			
+		// Determine if it's an empty image by counting the number of 
+		// contiguous chunks above a threshold.
+		int chunk = 4;
+		int chunk_int_count;
+		chunk_tot_count=0;
+		for(int i=chunk;i<sizex2*sizey2;i++){
+            chunk_int_count = 0;
+		    for(int j=0;j<chunk;j++){
+		        if(A.at<uint16_t>(i-j)>A_thresh+20){chunk_int_count+=1;}
+	        }
+	        if(chunk_int_count==chunk){chunk_tot_count+=1;}
+		}
+		
+		
+        if(chunk_tot_count>chunk_tot_thresh/10.0){
+        
+		// Dilate
+		// 60 us
+		for(int i=0;i<sizex2*sizey2;i++){
+		    B.at<float>(i)=A.at<uint16_t>(i);    
+		}
+		cv::dilate(B, Bdil, K);
+		
+		// Do a 1-dimensional scan over the arrays. Faster than two nested for
+		// loops. You will have to calculate the xy coordinates from the single
+		// index i.
+		// 60 us
+		float tmpBi;
+		float tmpBdili;
+		float tmpAi;
+		int n_A_above_thresh;
+		
+		for (int i = 0; i < sizex2*sizey2; i++) {
+			tmpBi = B.at<float>(i);
+			tmpBdili = Bdil.at<float>(i);
+			tmpAi = A.at<uint16_t>(i);
+			if (tmpBi == tmpBdili && tmpAi > A_thresh && k<302) {
+			    n_A_above_thresh = 0;
+			    if(i>sizex2 && i<sizex2*(sizey2-1)){
+			        for(int m=0;m<3;++m){
+			        for(int l=0;l<3;++l){
+			            if(A.at<uint16_t>(i+(m-1)*sizex2+(l-1))>A_thresh){
+			                n_A_above_thresh++;
+			            }
+			        }}
+			        
+			        /*if(A.at<uint16_t>(i-sizex2)>A_thresh){n_A_above_thresh++;}
+			        if(A.at<uint16_t>(i-1)>A_thresh){n_A_above_thresh++;}
+			        if(A.at<uint16_t>(i+1)>A_thresh){n_A_above_thresh++;}
+			        if(A.at<uint16_t>(i+sizex2)>A_thresh){n_A_above_thresh++;}*/
+		        }
+		        if(n_A_above_thresh > 3){
+			        NeuronXY[k] = i;
+			        k++;
+			    }
+			}
+		}
+	
+	    } else {
+	    // just copy A in B
+	        for(int i=0;i<sizex2*sizey2;i++){
+		        B.at<float>(i)=A.at<uint16_t>(i);    
+		    }
+	    }
+	}
+	NeuronN = k;
+}
+
+void segment_singleframe_pipeline_old(uint16_t ImgIn[], 
+	int32_t sizex, int32_t sizey, 
+	cv::Mat& C, int32_t sizeC, 
+	cv::Mat& A, cv::Mat& B, cv::Mat& BX, cv::Mat& BY, 
+	cv::Mat& Bth, cv::Mat& Bdil, cv::Mat& K,
+	uint32_t NeuronXY[], uint32_t &NeuronN, 
+	double &maxX, double &maxY, double maxXInStack, double maxYInStack,
+	int &chunk_tot_count, int chunk_tot_thresh,
+	float threshold, double blur, uint16_t A_thresh, bool resize) {
 	
 	// The execution times below are for the lab computer:
 	// Dual Intel Xeon Processor E5-2643 v4 
@@ -636,12 +864,35 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// Resize image
 		cv::resize(cv::Mat(sizex, sizey, CV_16U, ImgIn), A, 
 			A.size(), 0, 0, cv::INTER_AREA);
-
+			
+		// Determine if it's an empty image by counting the number of 
+		// contiguous chunks above a threshold.
+		//uint16_t A_thresh = 110;
+		int chunk = 4;
+		int chunk_int_count;
+		chunk_tot_count=0;
+		for(int i=chunk;i<sizex2*sizey2;i++){
+            chunk_int_count = 0;
+		    for(int j=0;j<chunk;j++){
+		        if(A.at<uint16_t>(i-j)>A_thresh+20){chunk_int_count+=1;}
+	        }
+	        if(chunk_int_count==chunk){chunk_tot_count+=1;}
+		}
+        
+        if(chunk_tot_count>chunk_tot_thresh/10.0){
+        
 		// Apply Gaussian blur
 		// 210 us
 		//double blur = 0.65; //0.65
 		cv::GaussianBlur(A, A, cv::Size(5, 5), blur, blur);
-
+		
+		
+		//Gamma correction			
+        /*cv::Mat Ag = cv::Mat(sizex2, sizey2, CV_32F, cv::Scalar::all(0.0));
+        for(int pq=0;pq<sizex2*sizey2;pq++){
+            Ag.at<float>(pq) = pow(std::min(std::max(A.at<uint16_t>(pq)-110.,0.0),2000.),0.5);
+        }*/
+        
 		// Calculate -d2/dx2 and -d2/dy2 with the filter passed as C.
 		// In this way, the CV_32F images will saturate the positive 
 		// derivatives and not the negative ones, which we need.
@@ -650,11 +901,11 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// use 1/2 instead of the 1 as second filter in the separable filter
 		// function. (Saves 100 microseconds)
 		// 300 us
-
-		cv::sepFilter2D(A, BX, CV_32F, C, OneHalf);
-		cv::sepFilter2D(A, BY, CV_32F, OneHalf, C);
+        
+		cv::sepFilter2D(A, BX, CV_32F, C, OneHalf); //FIXME Ag. If you want the gamma correction 
+		cv::sepFilter2D(A, BY, CV_32F, OneHalf, C); //to be active replace A with Ag.
 		cv::add(BX,BY,B);
-
+		
 		// Threshold out some noise below a fraction of the maximum values:
 		// Keep only the points in which **both** derivatives are above
 		// threshold separately
@@ -665,8 +916,12 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 		// Hessian, so that you don't get too large threshold because of very
 		// shar
 		// 100 us
-		cv::minMaxIdx(BX, &minX, &maxX, NULL, NULL);
+		/**cv::minMaxIdx(BX, &minX, &maxX, NULL, NULL);
 		cv::minMaxIdx(BY, &minY, &maxY, NULL, NULL);
+		
+		////This was before 30th April 2021 change
+		//maxX = kthlargest((float*)BX.data, sizex2*sizey2, 10); //10
+        //maxY = kthlargest((float*)BY.data, sizex2*sizey2, 10); //10
 		if ( (maxXInStack == -1.0 && maxYInStack == -1.0) || 
 		     (maxXInStack < maxX || maxYInStack < maxY) ) {
 			threshX = threshold * maxX;
@@ -675,30 +930,90 @@ void segment_singleframe_pipeline(uint16_t ImgIn[],
 			threshX = threshold * maxXInStack;
 			threshY = threshold * maxYInStack;
 		}
-		cv::threshold(BX, BX, threshX, 1, CV_THRESH_BINARY);
-		cv::threshold(BY, BY, threshY, 1, CV_THRESH_BINARY);
-		Bth = BX.mul(BY);
-		Bth = Bth.mul(B);
-
+		//cv::threshold(BX, BX, threshX, 1, CV_THRESH_BINARY);
+		//cv::threshold(BY, BY, threshY, 1, CV_THRESH_BINARY);
+		//Bth = BX.mul(BY);
+		cv::threshold(B, Bth, 0.5*(threshX+threshY), 1, CV_THRESH_BINARY);
+		Bth = Bth.mul(B);**/
+		for (int i=0;i<sizex2*sizey2;++i){
+		    Bth.at<float>(i) = B.at<float>(i);
+		}
+		
+		/**
+		//FIXME JUST DOING WITH AA As
+		for(int pq=0;pq<sizex2*sizey2;pq++){
+		    BX.at<float>(pq) = Ag.at<float>(pq)/2;
+		    BY.at<float>(pq) = Ag.at<float>(pq)/2;
+		    B.at<float>(pq) = Ag.at<float>(pq);
+		    Bth.at<float>(pq) = Ag.at<float>(pq);
+		}**/
+        
 		// Dilate
 		// 60 us
+		/**for(int i=0;i<sizex2*sizey2;i++){
+		    Bth.at<float>(i)=A.at<uint16_t>(i);
+		    B.at<float>(i)=A.at<uint16_t>(i);    
+		}**/
 		cv::dilate(Bth, Bdil, K);
-
+		
 		// Do a 1-dimensional scan over the arrays. Faster than two nested for
 		// loops. You will have to calculate the xy coordinates from the single
 		// index i.
 		// 60 us
 		float tmpBi;
 		float tmpBdili;
+		float tmpAi;
+		uint16_t A_neigh[25];
+		uint16_t i_max_subset, i_max;
+		int n_A_above_thresh;
+		
 		for (int i = 0; i < sizex2*sizey2; i++) {
 			tmpBi = B.at<float>(i);
 			tmpBdili = Bdil.at<float>(i);
-			if (tmpBi != 0.0 && tmpBi == tmpBdili) {
-				NeuronXY[k] = i;
-				k++;
+			tmpAi = A.at<uint16_t>(i);
+			n_A_above_thresh = 0;
+			if (tmpBi != 0.0 && tmpBi == tmpBdili && tmpAi > A_thresh && k<302) {
+			    /**if(i>sizex2 && i<sizex2*(sizey2-1)){
+			        if(A.at<uint16_t>(i-sizex2)>A_thresh){n_A_above_thresh+=1;}
+			        if(A.at<uint16_t>(i-1)>A_thresh){n_A_above_thresh+=1;}
+			        if(A.at<uint16_t>(i)>A_thresh){n_A_above_thresh+=1;}
+			        if(A.at<uint16_t>(i+1)>A_thresh){n_A_above_thresh+=1;}
+			        if(A.at<uint16_t>(i+sizex2)>A_thresh){n_A_above_thresh+=1;}
+		        }
+		        if(n_A_above_thresh > 4){
+			        NeuronXY[k] = i;
+			        k++;
+			    }**/
+			    NeuronXY[k] = i;
+		        k++;
+			    /**FIND ACTUAL MAX IN A
+			    if(i<(sizex2*(sizey2-2)) && i%sizex2<(sizex2-2) && i%sizex2>2){
+			        for(int q=-2;q<=2;q++) {
+			            for(int p=-2;p<=2;p++){
+			                A_neigh[(q+2)*5+(p+2)] = A.at<uint16_t>(i+q*sizex2+p);
+			            }
+			        }
+			        // Find index of maximum value in the neighborhood, first
+			        // as index in the neighborhood subset and then as index
+			        // in the full image array.
+			        i_max_subset = std::distance(A_neigh, std::max_element(A_neigh , A_neigh + 25));
+			        i_max = i+sizex2*(i_max_subset/5)+i_max_subset%5;
+			        // Store the index as a neuron candidate in this plane.
+			        NeuronXY[k] = i_max;
+			        END FIND ACTUAL MAX IN A**/
+			        
+			        // THIS TO EXTRACT THE POSITION BASED ON CURVATURE ALONE
+			    
+				//}
 			}
 		}
 	
+	    } else {
+	    // just copy A in B
+	        for(int i=0;i<sizex2*sizey2;i++){
+		        B.at<float>(i)=0.0;//A.at<uint16_t>(i);    
+		    }
+	    }
 	}
 	NeuronN = k;
 }
@@ -707,7 +1022,9 @@ void segment_check2dcandidates_5planes(
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+	uint32_t *NeuronXYout, uint32_t &NeuronNout,
+	int32_t maxNeuronNPerVolume) {
+	//uint32_t *NeuronNAll, uint32_t *volumeFirstFrame, bool check_if_other_candidate
 
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
@@ -749,7 +1066,16 @@ void segment_check2dcandidates_5planes(
 		if (Bxy < ArrB3[index]) ok = false;
 		if (Bxy < ArrB3[index + 1]) ok = false;
 		if (Bxy < ArrB3[index + sizeBx]) ok = false;
-**/		if (index > (uint32_t)sizeBx && index < upperlimit) {
+**/		if (index > (uint32_t)sizeBx && index < upperlimit && k < maxNeuronNPerVolume) {
+
+            /**if(check_if_other_candidate){
+                ok2 = true;
+                for(int l=-2;l<2;l++){
+                for(int q=0;q<NeuronNAll[*(volumeFirstFrame+l)];q++){
+                    if(NeuronXYAll[
+                }}
+            }**/
+            
 		    if (    (Bxy > ArrB0[index]) &&
 		            (Bxy > ArrB4[index]) &&
 		            (Bxy > ArrB1[index - sizeBx]) &&
@@ -771,31 +1097,41 @@ void segment_check2dcandidates_5planes(
 }
 
 void segment_check2dcandidates_7planes(
+    uint16_t ArrA0[], uint16_t ArrA1[], uint16_t ArrA2[],
+    uint16_t ArrA3[], uint16_t ArrA4[], uint16_t ArrA5[], uint16_t ArrA6[],
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
     int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout, uint32_t maxdiameter) {
+	uint32_t *NeuronXYout, uint32_t &NeuronNout, uint32_t maxdiameter,
+	int32_t maxNeuronNPerVolume) {
     
     // Alias for one of the two versions
     
     if(maxdiameter==3){
-        segment_check2dcandidates_7planes_3maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
-        ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
+        segment_check2dcandidates_7planes_3maxdiameter(
+        ArrA0,ArrA1,ArrA2,ArrA3,ArrA4,ArrA5,ArrA6, //TODO AA
+        ArrB0,ArrB1,ArrB2,ArrB3,ArrB4,ArrB5,ArrB6,
+        sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout,maxNeuronNPerVolume);
     } else if(maxdiameter==5){
-        segment_check2dcandidates_7planes_5maxdiameter(ArrB0,ArrB1,ArrB2,ArrB3,
-        ArrB4,ArrB5,ArrB6,sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout);
+        segment_check2dcandidates_7planes_5maxdiameter(
+        ArrA0,ArrA1,ArrA2,ArrA3,ArrA4,ArrA5,ArrA6, //TODO AA
+        ArrB0,ArrB1,ArrB2,ArrB3,ArrB4,ArrB5,ArrB6,
+        sizeBx,sizeBy,NeuronXYin,NeuronNin,NeuronXYout,NeuronNout,maxNeuronNPerVolume);
     }
 	
 }
 
 
 void segment_check2dcandidates_7planes_3maxdiameter(
+    uint16_t ArrA0[], uint16_t ArrA1[], uint16_t ArrA2[],
+    uint16_t ArrA3[], uint16_t ArrA4[], uint16_t ArrA5[], uint16_t ArrA6[],
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
     int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+	uint32_t *NeuronXYout, uint32_t &NeuronNout,
+	int32_t maxNeuronNPerVolume) {
 
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
@@ -804,6 +1140,7 @@ void segment_check2dcandidates_7planes_3maxdiameter(
 	// you don't have to wait until the full volume is ready before starting
 	// this brute force check.
 	
+	uint16_t Axy; //TODO AA
 	float Bxy;
 	int32_t k = 0;
 	uint32_t index;
@@ -811,9 +1148,10 @@ void segment_check2dcandidates_7planes_3maxdiameter(
 
 	for (uint i = 0; i < NeuronNin; i++) {
 		index = NeuronXYin[i];
+		Axy = ArrA3[index]; //TODO AA
 		Bxy = ArrB3[index];
 
-		if (index > (uint32_t)sizeBx && index < upperlimit) {
+		if (index > (uint32_t)sizeBx && index < upperlimit && k < maxNeuronNPerVolume) {
 		    if (    (Bxy > ArrB0[index]) &&
 		    
 		            (Bxy > ArrB6[index]) &&
@@ -838,7 +1176,35 @@ void segment_check2dcandidates_7planes_3maxdiameter(
 		            (Bxy > ArrB5[index - 1]) &&
 		            (Bxy > ArrB5[index]) &&
 		            (Bxy > ArrB5[index + 1]) &&
-		            (Bxy > ArrB5[index + sizeBx]) ) {
+		            (Bxy > ArrB5[index + sizeBx]) /**&&
+		            
+		            //As
+
+		            (Axy > ArrA0[index]) &&
+		    
+		            (Axy > ArrA6[index]) &&
+		            
+		            (Axy > ArrA1[index - sizeBx]) &&
+		            (Axy > ArrA1[index - 1]) &&
+		            (Axy > ArrA1[index]) &&
+		            (Axy > ArrA1[index + 1]) &&
+		            (Axy > ArrA1[index + sizeBx]) &&
+		            
+		            (Axy > ArrA2[index - 1]) &&
+		            (Axy > ArrA2[index]) &&
+		            (Axy > ArrA2[index + 1]) &&
+		            (Axy > ArrA2[index + sizeBx]) &&
+		            
+		            (Axy > ArrA4[index - sizeBx]) &&
+		            (Axy > ArrA4[index - 1]) &&
+		            (Axy > ArrA4[index]) &&
+		            (Axy > ArrA4[index + 1]) &&
+		            (Axy > ArrA4[index + sizeBx]) &&
+		            
+		            (Axy > ArrA5[index - 1]) &&
+		            (Axy > ArrA5[index]) &&
+		            (Axy > ArrA5[index + 1]) &&
+		            (Axy > ArrA5[index + sizeBx])**/ ) {
 			    *(NeuronXYout+k) = index; 
 			    k++;
 		    }
@@ -848,11 +1214,14 @@ void segment_check2dcandidates_7planes_3maxdiameter(
 }
 
 void segment_check2dcandidates_7planes_5maxdiameter(
+    uint16_t ArrA0[], uint16_t ArrA1[], uint16_t ArrA2[],
+    uint16_t ArrA3[], uint16_t ArrA4[], uint16_t ArrA5[], uint16_t ArrA6[],
 	float ArrB0[], float ArrB1[], float ArrB2[],
 	float ArrB3[], float ArrB4[], float ArrB5[], float ArrB6[],
     int32_t sizeBx, int32_t sizeBy, 
 	uint32_t NeuronXYin[], uint32_t NeuronNin,
-	uint32_t *NeuronXYout, uint32_t &NeuronNout) {
+	uint32_t *NeuronXYout, uint32_t &NeuronNout,
+	int32_t maxNeuronNPerVolume) {
 
 	// Brute force check if the candidate neurons found on each plane are
 	// actually maxima in -d2/dx2-d2/dy2 also in a sphere around them and not
@@ -870,7 +1239,7 @@ void segment_check2dcandidates_7planes_5maxdiameter(
 		index = NeuronXYin[i];
 		Bxy = ArrB3[index];
 
-		if (index > 2*((uint32_t)sizeBx) && index < upperlimit) {
+		if (index > 2*((uint32_t)sizeBx) && index < upperlimit && k < maxNeuronNPerVolume) {
 		    if (    (Bxy > ArrB0[index]) &&
 		    
 		            (Bxy > ArrB6[index]) &&
@@ -969,6 +1338,7 @@ void segment_extract_curvature(
     if(totalBoxSize==51){
 	for (uint i = 0; i < NeuronNin; i++) {
 	    index = NeuronXYin[i];
+	    if(index>2*sizeBx && index<(sizeBx-2)*sizeBy) {
 		*(NeuronCurvatureOut+k+0) = ArrB0[index];
 		
 		*(NeuronCurvatureOut+k+1)  = ArrB1[index - sizeBx];
@@ -1026,7 +1396,12 @@ void segment_extract_curvature(
 		*(NeuronCurvatureOut+k+49) = ArrB5[index + sizeBx];
 		
 		*(NeuronCurvatureOut+k+50) = ArrB6[index];
-		
+	    } else {
+	        for(int curvi=0;curvi<51;curvi++){
+	            *(NeuronCurvatureOut+k+curvi) = 1;
+	        }
+	    }
+	    
 		k += totalBoxSize;
 	}
 	}
@@ -1099,3 +1474,15 @@ void segment_extract_curvature_single_frame(
 	}
 }
 
+float kthlargest(float array[], int size, int k) {
+    std::priority_queue<std::pair<float, int>> q;
+    for (int i = 0; i < size; ++i) {
+        q.push(std::pair<float, int>(array[i], i));
+    }
+    int ki;
+    for (int i = 0; i < k; ++i) {
+        ki = q.top().second;
+        q.pop();
+    }
+    return array[ki];
+}
