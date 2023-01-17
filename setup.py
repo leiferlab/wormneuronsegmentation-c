@@ -38,7 +38,7 @@ wormneuronsegmentation_c = Extension('wormneuronsegmentation._wormneuronsegmenta
                     extra_compile_args=['-O3'],)
 
 setup (name = 'wormneuronsegmentation',
-       version = v,
+       version = "1.0.1",
        author='Francesco Randi @ Leiferlab, Princeton Physics',
        author_email='francesco.randi@gmail.com',
        description = 'Optimized segmentation code to locate the nuclei of neurons in stacks of fluorescence images of the worm\'s brain',
