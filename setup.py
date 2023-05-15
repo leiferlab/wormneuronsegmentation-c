@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 from distutils.command.build_ext import build_ext
 import os
-import git
+#import git
 
 class CustomBuildExtCommand(build_ext):
     """build_ext command for use when numpy headers are needed."""
@@ -24,11 +24,12 @@ else:
     library_dirs = os.environ['LD_LIBRARY_PATH'].split(':')
     
 # Get git commit info to build version number/tag
-repo = git.Repo('.git')
-git_hash = repo.head.object.hexsha
-git_url = repo.remotes.origin.url
-v = repo.git.describe()
-if repo.is_dirty(): v += ".dirty"
+#repo = git.Repo('.git')
+#git_hash = repo.head.object.hexsha
+#git_url = repo.remotes.origin.url
+#v = repo.git.describe()
+#if repo.is_dirty(): v += ".dirty"
+v = "1.2"
 
 wormneuronsegmentation_c = Extension('wormneuronsegmentation._wormneuronsegmentation_c',
                     sources = ['neuronsegmentation_c/neuronsegmentation.cpp','wormneuronsegmentation/_wormneuronsegmentation_c.cpp'],
@@ -43,4 +44,6 @@ setup (name = 'wormneuronsegmentation',
        author_email='francesco.randi@gmail.com',
        description = 'Optimized segmentation code to locate the nuclei of neurons in stacks of fluorescence images of the worm\'s brain',
        py_modules = ['wormneuronsegmentation._wormneuronsegmentation_py'],
-       ext_modules = [wormneuronsegmentation_c])
+       ext_modules = [wormneuronsegmentation_c],
+       package_data={'wormneuronsegmentation': ['../neuronsegmentation_c/neuronsegmentation.hpp',
+                                                '../neuronsegmentation_c/utilities.cpp']})
